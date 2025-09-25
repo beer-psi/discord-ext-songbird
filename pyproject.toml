@@ -1,0 +1,52 @@
+[project]
+name = "discord-ext-songbird"
+dynamic = ["version"]
+requires-python = ">=3.8"
+authors = [{ name = "beerpsi", email = "beerpsi@duck.com" }]
+description = "songbird wrapper for discord.py"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+license-files = ["LICEN[CS]E*"]
+dependencies = [
+    "discord-py~=2.0",
+    "typing-extensions~=4.0",
+]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Free Threading :: 2 - Beta",
+]
+
+[project.urls]
+Repository = "https://github.com/beer-psi/discord-ext-songbird.git"
+Issues = "https://github.com/beer-psi/discord-ext-songbird/issues"
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.31.5",
+    "maturin>=1.9.4",
+    "ruff>=0.13.1",
+]
+examples = [
+    "yt-dlp>=2024.10.22",
+]
+
+[build-system]
+requires = ["maturin>=1.9,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "discord.ext.songbird._native"
+python-source = "python"
+
+[tool.basedpyright]
+pythonVersion = "3.8"
