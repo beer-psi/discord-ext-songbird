@@ -131,7 +131,6 @@ impl VoiceConnection {
             };
 
             let Some(channel_id) = channel_id else {
-                call.remove_all_global_events();
                 call.leave().await?;
                 return Ok(());
             };
