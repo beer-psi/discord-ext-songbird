@@ -1,4 +1,4 @@
-use pyo3::{exceptions::PyNotImplementedError, prelude::*, sync::PyOnceLock};
+use pyo3::{exceptions::PyNotImplementedError, prelude::*};
 use songbird::input::Input;
 
 use crate::error::SongbirdResult;
@@ -26,5 +26,3 @@ pub struct SongbirdSource(pub Box<dyn IntoSongbirdInput>);
 pub trait IntoSongbirdInput: Send + Sync {
     fn input(&self) -> SongbirdResult<Input>;
 }
-
-pub(super) const HTTP_CLIENT: PyOnceLock<reqwest::Client> = PyOnceLock::new();

@@ -11,8 +11,9 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use songbird::input::HttpRequest as SongbirdHttpRequest;
 
 use crate::{
+    constants::HTTP_CLIENT,
     error::{SongbirdError, SongbirdResult},
-    input::sources::base::{AudioSource, IntoSongbirdInput, SongbirdSource, HTTP_CLIENT},
+    input::sources::base::{AudioSource, IntoSongbirdInput, SongbirdSource},
 };
 
 #[pyclass(extends=AudioSource)]

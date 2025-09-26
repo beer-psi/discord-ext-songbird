@@ -3,12 +3,11 @@ use std::{
     time::Duration,
 };
 
-use pyo3::{prelude::*, sync::PyOnceLock};
+use pyo3::prelude::*;
 use songbird::driver::DisposalThread;
 
+use crate::constants::DISPOSAL_THREAD;
 use crate::error::SongbirdError;
-
-static DISPOSAL_THREAD: PyOnceLock<DisposalThread> = PyOnceLock::new();
 
 #[pyclass(module = "discord.ext.songbird._native")]
 #[derive(Clone, Debug)]

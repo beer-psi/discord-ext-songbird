@@ -1,6 +1,7 @@
 mod client;
 mod config;
 mod connection;
+mod constants;
 mod error;
 mod events;
 mod input;
