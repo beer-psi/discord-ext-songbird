@@ -94,8 +94,15 @@ class SongbirdClient(discord.VoiceProtocol):
 
     @override
     async def disconnect(self, *, force: bool = False) -> None:
-        self.cleanup()
-        await self.songbird.disconnect()
+        if not force and not await self.is_connected():
+            return
+
+        self.stop()
+
+        try:
+            await self.songbird.disconnect()
+        finally:
+            self.cleanup()
 
     async def move_to(
         self,
