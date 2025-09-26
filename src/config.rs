@@ -3,9 +3,12 @@ use std::{
     time::Duration,
 };
 
-use pyo3::prelude::*;
+use pyo3::{prelude::*, sync::PyOnceLock};
+use songbird::driver::DisposalThread;
 
 use crate::error::SongbirdError;
+
+static DISPOSAL_THREAD: PyOnceLock<DisposalThread> = PyOnceLock::new();
 
 #[pyclass(module = "discord.ext.songbird._native")]
 #[derive(Clone, Debug)]
@@ -30,10 +33,18 @@ impl Config {
 #[pymethods]
 impl Config {
     #[new]
-    fn new() -> Self {
-        Self {
-            inner: Arc::new(RwLock::new(songbird::Config::default())),
-        }
+    fn new(py: Python) -> Self {
+        let disposer = DISPOSAL_THREAD
+            .get_or_init(py, || DisposalThread::run())
+            .clone();
+
+        py.detach(move || {
+            let config = songbird::Config::default().disposer(disposer);
+
+            Self {
+                inner: Arc::new(RwLock::new(config)),
+            }
+        })
     }
 
     #[getter]
