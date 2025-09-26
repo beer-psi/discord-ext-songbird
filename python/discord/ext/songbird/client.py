@@ -26,20 +26,56 @@ logger = logging.getLogger("discord.ext.songbird")
 
 
 class SongbirdClient(discord.VoiceProtocol):
+    """
+    A voice client for discord.py using the Songbird voice library written in Rust.
+
+    You can use this client by passing the class into
+    :meth:`discord.VoiceChannel.connect`:
+
+    ```python
+    await channel.connect(cls=songbird.SongbirdClient)
+    ```
+
+    To change the connection's settings, you can pass a :class:`Config` in using
+    :class:`functools.partial`:
+
+    ```python
+    config = Config()
+    config.gateway_timeout = timedelta(seconds=30)
+
+    await channel.connect(cls=partial(songbird.SongbirdClient, config=config))
+    ```
+
+    Attributes:
+    :attr Config config: The connection's configuration.
+    :attr session_id: The voice connection session ID.
+    :attr token: The voice connection token.
+    :attr endpoint: The endpoint connected to.
+    :attr channel: The channel connected to.
+    """
+
     channel: "VocalGuildChannel"  # pyright: ignore[reportIncompatibleVariableOverride]
 
     def __init__(
-        self, client: discord.Client, channel: discord.abc.Connectable
+        self,
+        client: discord.Client,
+        channel: discord.abc.Connectable,
+        config: Config = MISSING,
     ) -> None:
         if client.user is None:
             raise ValueError("client not logged in")
 
         super().__init__(client, channel)
 
-        self.songbird: NativeSongbirdClient = NativeSongbirdClient(
-            self.channel.id, Config()
-        )
+        if config is MISSING:
+            self.config: Config = Config()
+        else:
+            self.config = config
+
+        self._songbird: NativeSongbirdClient = MISSING
+        self.session_id: Optional[str] = None
         self.token: Optional[str] = None
+        self.endpoint: Optional[str] = None
 
         self._track_handle: Optional[TrackHandle] = None
 
@@ -59,7 +95,9 @@ class SongbirdClient(discord.VoiceProtocol):
 
     @override
     async def on_voice_state_update(self, data: "GuildVoiceStatePayload", /) -> None:
-        await self.songbird.update_state(
+        self.session_id = data["session_id"]
+
+        await self._songbird.update_state(
             data["session_id"],
             int(data["channel_id"]) if data["channel_id"] is not None else None,  # pyright: ignore[reportUnnecessaryComparison]
         )
@@ -67,12 +105,12 @@ class SongbirdClient(discord.VoiceProtocol):
     @override
     async def on_voice_server_update(self, data: "VoiceServerUpdatePayload", /) -> None:
         self.token = data["token"]
-        endpoint = data.get("endpoint")
+        self.endpoint = data.get("endpoint")
 
-        if self.token is None or endpoint is None:  # pyright: ignore[reportUnnecessaryComparison]
+        if self.token is None or self.endpoint is None:  # pyright: ignore[reportUnnecessaryComparison]
             return
 
-        await self.songbird.update_server(endpoint, self.token)
+        await self._songbird.update_server(self.endpoint, self.token)
 
     @override
     async def connect(
@@ -83,12 +121,14 @@ class SongbirdClient(discord.VoiceProtocol):
         self_deaf: bool = False,
         self_mute: bool = False,
     ) -> None:
-        await self.songbird.start(
+        self._songbird = await NativeSongbirdClient.new(
+            self.config,
             self.client.user.id,  # pyright: ignore[reportOptionalMemberAccess]
             self.channel.guild.id,
+            self.channel.id,
             self._update_voice_state,
         )
-        await self.songbird.connect(
+        await self._songbird.connect(
             timedelta(seconds=timeout), reconnect, self_deaf, self_mute
         )
 
@@ -100,8 +140,10 @@ class SongbirdClient(discord.VoiceProtocol):
         self.stop()
 
         try:
-            await self.songbird.disconnect()
+            await self._songbird.disconnect()
         finally:
+            # drop the native client
+            self._songbird = MISSING
             self.cleanup()
 
     async def move_to(
@@ -110,15 +152,28 @@ class SongbirdClient(discord.VoiceProtocol):
         *,
         timeout: Optional[timedelta] = MISSING,
     ) -> None:
+        """
+        Moves the client to a different voice channel.
+
+        Parameters:
+        :param channel: The channel to move to. Must be a voice channel.
+        :param timeout: How long to wait for the move to complete.
+        """
+
         if timeout is MISSING:
             timeout = timedelta(seconds=30)
 
-        await self.songbird.move_to(
+        await self._songbird.move_to(
             channel.id if channel is not None else None, timeout
         )
 
     async def is_connected(self) -> bool:
-        return await self.songbird.is_connected()
+        """Whether the client is connected to a voice channel."""
+
+        if self._songbird is MISSING:
+            return False
+
+        return await self._songbird.is_connected()
 
     async def play(
         self,
@@ -126,13 +181,36 @@ class SongbirdClient(discord.VoiceProtocol):
         *,
         after: Optional[Callable[[Optional[Exception]], Any]] = None,  # pyright: ignore[reportExplicitAny]
     ) -> TrackHandle:
+        """
+        Plays a :class:`Track`.
+
+        The finalizer, `after` is called after the source has been exhausted
+        or an error occurred.
+
+        If an error happens while the audio player is running, the exception is
+        caught and the audio player is then stopped.  If no `after` callback is
+        passed, any caught exception will be logged using the library logger.
+
+        Returns a track handle for controlling playback. The track handle
+        is also stored by the client, so you can just call playback methods
+        on the client instead.
+
+        Parameters:
+        :param Track track: The track to play.
+        :param after: The finalizer called when playback has finished. This function
+            must have a single parameter containing an optional exception that
+            occurred during playback.
+        :return: the track handle
+        :rtype: TrackHandle
+        """
+
         if self._track_handle is not None:
             raise ClientException("Already playing audio.")
 
         if not await self.is_connected():
             raise ClientException("Not connected to voice.")
 
-        self._track_handle = await self.songbird.play(track)
+        self._track_handle = await self._songbird.play(track)
 
         def on_end(uuid: UUID, error: Optional[PlayError] = None):
             if after is not None:
@@ -161,13 +239,23 @@ class SongbirdClient(discord.VoiceProtocol):
         *,
         after: Optional[Callable[[Optional[Exception]], Any]] = None,  # pyright: ignore[reportExplicitAny]
     ) -> TrackHandle:
+        """
+        Plays an :class:`AudioSource`.
+
+        Generally, playing a :class:`Track` using :meth:`play` is recommended
+        if you want fine-grained control over the starting configuration, e.g.
+        whether to start paused, playback volume, and so on.
+
+        Other parameters have the same meaning as :meth:`play`.
+        """
+
         if self._track_handle is not None:
             raise ClientException("Already playing audio.")
 
         if not await self.is_connected():
             raise ClientException("Not connected to voice.")
 
-        self._track_handle = await self.songbird.play_input(input)
+        self._track_handle = await self._songbird.play_input(input)
 
         def on_end(uuid: UUID, error: Optional[PlayError] = None):
             if uuid != self.track_uuid:
@@ -199,39 +287,76 @@ class SongbirdClient(discord.VoiceProtocol):
         return self._track_handle
 
     def stop(self) -> None:
+        """
+        Stops the currently playing track. Cannot be resumed.
+        """
+
         if self._track_handle:
             self._track_handle.stop()
             self._track_handle = None
 
     def pause(self) -> None:
+        """
+        Pauses the currently playing track.
+        """
+
         if self._track_handle:
             self._track_handle.pause()
 
     def resume(self) -> None:
+        """
+        Resumes the currently playing track.
+        """
+
         if self._track_handle:
             self._track_handle.play()
 
     def set_volume(self, volume: float) -> None:
+        """
+        Sets the volume for the current track.
+        """
+
         if self._track_handle:
             self._track_handle.set_volume(volume)
 
     async def make_playable(self) -> None:
+        """
+        Wait until the current track is ready for playing.
+        """
+
         if self._track_handle:
             await self._track_handle.make_playable()
 
     async def seek(self, position: timedelta) -> None:
+        """
+        Seeks along the track to the specified position.
+        """
+
         if self._track_handle:
             await self._track_handle.seek(position)
 
     def enable_loop(self) -> None:
+        """
+        Sets the current track to loop indefinitely.
+        """
+
         if self._track_handle:
             self._track_handle.enable_loop()
 
     def disable_loop(self) -> None:
+        """
+        Sets the current track to no longer loop.
+        """
+
         if self._track_handle:
             self._track_handle.disable_loop()
 
     def loop_for(self, count: int) -> None:
+        """
+        Sets the current track to loop for `count` times. `count` must be a
+        non-negative integer.
+        """
+
         if self._track_handle:
             self._track_handle.loop_for(count)
 
