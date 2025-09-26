@@ -24,30 +24,25 @@ pub struct VoiceConnection {
 }
 
 impl VoiceConnection {
-    pub fn new<C: Into<ChannelId>>(channel_id: C) -> Self {
-        Self {
-            call: Arc::new(Mutex::new(None)),
-            channel_id: channel_id.into(),
-        }
-    }
-
-    pub async fn start<U: Into<UserId>, G: Into<GuildId>>(
-        &self,
+    pub fn new<U: Into<UserId>, G: Into<GuildId>, C: Into<ChannelId>>(
         user_id: U,
         guild_id: G,
+        channel_id: C,
         update_hook: DiscordPyVoiceUpdate,
-    ) {
-        let call = Call::new(guild_id.into(), update_hook.into(), user_id.into());
-
-        {
-            let mut handler = self.call.lock().await;
-            *handler = Some(call);
+    ) -> Self {
+        Self {
+            call: Arc::new(Mutex::new(Some(Call::new(
+                guild_id.into(),
+                update_hook.into(),
+                user_id.into(),
+            )))),
+            channel_id: channel_id.into(),
         }
     }
 
     pub async fn update_server(&self, endpoint: String, token: String) -> SongbirdResult<()> {
         let Some(call) = &mut *self.call.lock().await else {
-            return Err(SongbirdError::ConnectionNotStarted);
+            return Err(SongbirdError::ConnectionInvalid);
         };
 
         call.update_server(endpoint, token);
@@ -60,7 +55,7 @@ impl VoiceConnection {
         channel_id: Option<C>,
     ) -> SongbirdResult<()> {
         let Some(call) = &mut *self.call.lock().await else {
-            return Err(SongbirdError::ConnectionNotStarted);
+            return Err(SongbirdError::ConnectionInvalid);
         };
 
         call.update_state(session_id, channel_id.map(|c| c.into()));
@@ -79,7 +74,7 @@ impl VoiceConnection {
         let mut config = config.deep_clone().into_inner();
         let stage_1 = {
             let Some(call) = &mut *self.call.lock().await else {
-                return Err(SongbirdError::ConnectionNotStarted);
+                return Err(SongbirdError::ConnectionInvalid);
             };
 
             config.gateway_timeout = Some(timeout);
@@ -124,7 +119,7 @@ impl VoiceConnection {
     ) -> SongbirdResult<()> {
         let stage_1 = {
             let Some(call) = &mut *self.call.lock().await else {
-                return Err(SongbirdError::ConnectionNotStarted);
+                return Err(SongbirdError::ConnectionInvalid);
             };
 
             let Some(channel_id) = channel_id else {
@@ -150,7 +145,7 @@ impl VoiceConnection {
 
     pub async fn is_connected(&self) -> SongbirdResult<bool> {
         let Some(call) = &mut *self.call.lock().await else {
-            return Err(SongbirdError::ConnectionNotStarted);
+            return Err(SongbirdError::ConnectionInvalid);
         };
 
         Ok(call.current_connection().is_some())
@@ -158,7 +153,7 @@ impl VoiceConnection {
 
     pub async fn mute(&self, mute: bool) -> SongbirdResult<()> {
         let Some(call) = &mut *self.call.lock().await else {
-            return Err(SongbirdError::ConnectionNotStarted);
+            return Err(SongbirdError::ConnectionInvalid);
         };
 
         call.mute(mute).await?;
@@ -168,7 +163,7 @@ impl VoiceConnection {
 
     pub async fn deafen(&self, deaf: bool) -> SongbirdResult<()> {
         let Some(call) = &mut *self.call.lock().await else {
-            return Err(SongbirdError::ConnectionNotStarted);
+            return Err(SongbirdError::ConnectionInvalid);
         };
 
         call.deafen(deaf).await?;
@@ -178,7 +173,7 @@ impl VoiceConnection {
 
     pub async fn play(&self, track: Track) -> SongbirdResult<TrackHandle> {
         let Some(call) = &mut *self.call.lock().await else {
-            return Err(SongbirdError::ConnectionNotStarted);
+            return Err(SongbirdError::ConnectionInvalid);
         };
 
         Ok(call.play(track))
@@ -186,7 +181,7 @@ impl VoiceConnection {
 
     pub async fn play_input(&self, input: Input) -> SongbirdResult<TrackHandle> {
         let Some(call) = &mut *self.call.lock().await else {
-            return Err(SongbirdError::ConnectionNotStarted);
+            return Err(SongbirdError::ConnectionInvalid);
         };
 
         Ok(call.play_input(input))

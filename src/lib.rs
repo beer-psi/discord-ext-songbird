@@ -9,7 +9,7 @@ mod tracks;
 use pyo3::prelude::*;
 
 use crate::error::{
-    PyConnectionNotStarted, PyControlError, PyJoinError, PyPlayError, PySongbirdError,
+    PyConnectionInvalid, PyControlError, PyJoinError, PyPlayError, PySongbirdError,
     PySourceConsumed, PyUnknownCryptoMode, PyUnknownRetryStrategy, PyUnknownTrackEvent,
 };
 
@@ -37,8 +37,8 @@ fn discord_ext_songbird(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add("SongbirdError", m.py().get_type::<PySongbirdError>())?;
     m.add(
-        "ConnectionNotStarted",
-        m.py().get_type::<PyConnectionNotStarted>(),
+        "ConnectionInvalid",
+        m.py().get_type::<PyConnectionInvalid>(),
     )?;
     m.add(
         "UnknownCryptoMode",

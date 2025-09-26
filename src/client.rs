@@ -21,21 +21,13 @@ pub struct SongbirdClient {
 
 #[pymethods]
 impl SongbirdClient {
-    #[new]
-    pub fn new(channel_id: NonZeroU64, config: Config) -> Self {
-        Self {
-            config,
-            connection: Arc::new(VoiceConnection::new(channel_id)),
-        }
-    }
-
-    /// Initializes the underlying Songbird connection. Must be called before
-    /// other methods.
-    pub fn start<'py>(
-        &self,
+    #[staticmethod]
+    pub fn new<'py>(
         py: Python<'py>,
+        config: Config,
         user_id: NonZeroU64,
         guild_id: NonZeroU64,
+        channel_id: NonZeroU64,
         update_voice_state_hook: Py<PyAny>,
     ) -> PyResult<Bound<'py, PyAny>> {
         if !update_voice_state_hook.bind(py).is_callable() {
@@ -44,18 +36,19 @@ impl SongbirdClient {
             ));
         }
 
-        let conn = self.connection.clone();
-
         future_into_py(py, async move {
-            conn.start(
+            // we have to instantiate the connection in here since songbird's call
+            // wants to start the driver threads using Tokio
+            let connection = Arc::new(VoiceConnection::new(
                 user_id,
                 guild_id,
+                channel_id,
                 DiscordPyVoiceUpdate {
                     update_voice_state_hook,
                 },
-            )
-            .await;
-            Ok(())
+            ));
+
+            Ok(Self { config, connection })
         })
     }
 

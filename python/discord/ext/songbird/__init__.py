@@ -1,7 +1,7 @@
 from ._native import (
     AudioSource,
     Config,
-    ConnectionNotStarted,
+    ConnectionInvalid,
     ControlError,
     CryptoMode,
     File,
@@ -26,7 +26,7 @@ from .track import Track
 __all__ = (
     "AudioSource",
     "Config",
-    "ConnectionNotStarted",
+    "ConnectionInvalid",
     "ControlError",
     "CryptoMode",
     "File",

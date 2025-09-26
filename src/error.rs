@@ -8,8 +8,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum SongbirdError {
-    #[error("Connection was not started")]
-    ConnectionNotStarted,
+    #[error("Connection is no longer invalid")]
+    ConnectionInvalid,
 
     #[error("Unknown crypto mode: {0:?}")]
     UnknownCryptoMode(songbird::driver::CryptoMode),
@@ -40,7 +40,7 @@ create_exception!(
 );
 create_exception!(
     discord.ext.songbird._native.exceptions,
-    PyConnectionNotStarted,
+    PyConnectionInvalid,
     PySongbirdError
 );
 create_exception!(
@@ -82,7 +82,7 @@ create_exception!(
 impl From<SongbirdError> for PyErr {
     fn from(value: SongbirdError) -> Self {
         match value {
-            SongbirdError::ConnectionNotStarted => PyConnectionNotStarted::new_err(()),
+            SongbirdError::ConnectionInvalid => PyConnectionInvalid::new_err(()),
             SongbirdError::UnknownCryptoMode(_) => PyUnknownCryptoMode::new_err(value.to_string()),
             SongbirdError::UnknownRetryStrategy(_) => {
                 PyUnknownRetryStrategy::new_err(value.to_string())
