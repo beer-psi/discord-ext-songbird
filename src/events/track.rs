@@ -56,15 +56,31 @@ impl EventHandler for PythonTrackEventHandler {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
         if let songbird::EventContext::Track(track_list) = ctx {
             for (state, handle) in *track_list {
+                // this shouldn't be terribly expensive, it's just a call to
+                // Py_INCREF
+                let callback = Python::attach(|py| self.callback.clone_ref(py));
+                let handle_uuid = handle.uuid().clone();
+
                 match state.playing {
                     PlayMode::Errored(_) => {
-                        let py_err: PyErr = PyPlayError::new_err(format!("{:?}", state.playing));
+                        let msg = format!("{:?}", state.playing);
 
-                        let _ =
-                            Python::attach(|py| self.callback.call1(py, (handle.uuid(), py_err)));
+                        tokio::task::spawn_blocking(move || {
+                            let py_err: PyErr = PyPlayError::new_err(msg);
+
+                            Python::attach(|py| {
+                                let _ = callback.call1(py, (handle_uuid, py_err));
+                                callback.drop_ref(py);
+                            });
+                        });
                     }
                     _ => {
-                        let _ = Python::attach(|py| self.callback.call1(py, (handle.uuid(),)));
+                        tokio::task::spawn_blocking(move || {
+                            Python::attach(|py| {
+                                let _ = callback.call1(py, (handle_uuid,));
+                                callback.drop_ref(py);
+                            });
+                        });
                     }
                 }
             }
