@@ -105,17 +105,14 @@ impl VoiceConnection {
     }
 
     pub async fn disconnect(&self) -> SongbirdResult<()> {
-        let Some(call) = &mut *self.call.lock().await else {
-            return Err(SongbirdError::ConnectionNotStarted);
-        };
+        let mut guard = self.call.lock().await;
 
-        call.remove_all_global_events();
-        call.leave().await?;
-
-        {
-            let mut handler = self.call.lock().await;
-            *handler = None;
+        if let Some(call) = &mut *guard {
+            call.remove_all_global_events();
+            call.leave().await?;
         }
+
+        *guard = None;
 
         Ok(())
     }
