@@ -55,14 +55,18 @@ impl VoiceConnection {
         session_id: String,
         channel_id: Option<C>,
     ) -> SongbirdResult<()> {
-        let Some(call) = &mut *self.call.lock().await else {
-            return Err(SongbirdError::ConnectionInvalid);
-        };
-
         // Workaround for songbird not propagating new voice state if disconnected
         match channel_id {
-            Some(channel_id) => call.update_state(session_id, Some(channel_id.into())),
-            None => self.disconnect().await?,
+            Some(channel_id) => {
+                let Some(call) = &mut *self.call.lock().await else {
+                    return Err(SongbirdError::ConnectionInvalid);
+                };
+
+                call.update_state(session_id, Some(channel_id.into()));
+            }
+            None => {
+                self.disconnect().await?;
+            }
         }
 
         Ok(())
