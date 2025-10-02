@@ -1,3 +1,4 @@
+mod bitrate;
 mod client;
 mod config;
 mod connection;
@@ -18,6 +19,8 @@ use crate::error::{
 #[pymodule(gil_used = false, name = "_native")]
 fn discord_ext_songbird(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<client::SongbirdClient>()?;
+
+    m.add_class::<bitrate::Bitrate>()?;
 
     m.add_class::<config::Config>()?;
     m.add_class::<config::CryptoMode>()?;

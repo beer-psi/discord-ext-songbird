@@ -9,7 +9,7 @@ from discord.errors import ClientException
 from discord.utils import MISSING  # pyright: ignore[reportAny]
 from typing_extensions import override
 
-from ._native import AudioSource, Config, PlayError, TrackEvent, TrackHandle
+from ._native import AudioSource, Bitrate, Config, PlayError, TrackEvent, TrackHandle
 from ._native import SongbirdClient as NativeSongbirdClient
 from .track import Track
 
@@ -145,6 +145,19 @@ class SongbirdClient(discord.VoiceProtocol):
             # drop the native client
             self._songbird = MISSING
             self.cleanup()
+
+    async def set_bitrate(self, bitrate: Bitrate) -> None:
+        """
+        Sets the bitrate for the Opus encoder. The default value is 128kbps:
+
+        ```python
+        Bitrate.bits_per_second(128_000)
+        ```
+
+        Alternatively, :meth:`Bitrate.auto` and :meth:`Bitrate.max` are available.
+        """
+
+        await self._songbird.set_bitrate(bitrate)
 
     async def move_to(
         self,

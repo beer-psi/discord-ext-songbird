@@ -3,6 +3,7 @@ use std::{sync::Arc, time::Duration};
 use async_trait::async_trait;
 use pyo3::{Py, PyAny, Python};
 use songbird::{
+    driver::Bitrate,
     error::{JoinError, JoinResult},
     id::{ChannelId, GuildId, UserId},
     input::Input,
@@ -17,7 +18,7 @@ use crate::{
     error::{SongbirdError, SongbirdResult},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VoiceConnection {
     call: Arc<Mutex<Option<Call>>>,
     channel_id: ChannelId,
@@ -58,7 +59,12 @@ impl VoiceConnection {
             return Err(SongbirdError::ConnectionInvalid);
         };
 
-        call.update_state(session_id, channel_id.map(|c| c.into()));
+        // Workaround for songbird not propagating new voice state if disconnected
+        match channel_id {
+            Some(channel_id) => call.update_state(session_id, Some(channel_id.into())),
+            None => call.leave().await?,
+        }
+
         Ok(())
     }
 
@@ -179,12 +185,36 @@ impl VoiceConnection {
         Ok(call.play(track))
     }
 
+    pub async fn play_only(&self, track: Track) -> SongbirdResult<TrackHandle> {
+        let Some(call) = &mut *self.call.lock().await else {
+            return Err(SongbirdError::ConnectionInvalid);
+        };
+
+        Ok(call.play_only(track))
+    }
+
     pub async fn play_input(&self, input: Input) -> SongbirdResult<TrackHandle> {
         let Some(call) = &mut *self.call.lock().await else {
             return Err(SongbirdError::ConnectionInvalid);
         };
 
         Ok(call.play_input(input))
+    }
+
+    pub async fn play_only_input(&self, input: Input) -> SongbirdResult<TrackHandle> {
+        let Some(call) = &mut *self.call.lock().await else {
+            return Err(SongbirdError::ConnectionInvalid);
+        };
+
+        Ok(call.play_only_input(input))
+    }
+
+    pub async fn set_bitrate(&self, bitrate: Bitrate) -> SongbirdResult<()> {
+        let Some(call) = &mut *self.call.lock().await else {
+            return Err(SongbirdError::ConnectionInvalid);
+        };
+
+        Ok(call.set_bitrate(bitrate))
     }
 }
 
@@ -202,19 +232,17 @@ impl VoiceUpdate for DiscordPyVoiceUpdate {
         self_deaf: bool,
         self_mute: bool,
     ) -> JoinResult<()> {
-        Python::attach(|py| {
-            let channel_id = channel_id.map(|c| c.0.get());
-
+        let channel_id = channel_id.map(|c| c.0.get());
+        let fut = Python::attach(|py| {
             pyo3_async_runtimes::tokio::into_future(
                 self.update_voice_state_hook
-                    .call1(py, (guild_id.0, channel_id, self_deaf, self_mute))
-                    .unwrap()
+                    .call1(py, (guild_id.0, channel_id, self_deaf, self_mute))?
                     .into_bound(py),
             )
         })
-        .map_err(|_| JoinError::Dropped)?
-        .await
         .map_err(|_| JoinError::Dropped)?;
+
+        fut.await.map_err(|_| JoinError::Dropped)?;
 
         Ok(())
     }

@@ -5,6 +5,7 @@ use pyo3_async_runtimes::tokio::future_into_py;
 use songbird::id::ChannelId;
 
 use crate::{
+    bitrate::Bitrate,
     config::Config,
     connection::{DiscordPyVoiceUpdate, VoiceConnection},
     input::sources::base::{AudioSource, SongbirdSource},
@@ -181,18 +182,22 @@ impl SongbirdClient {
     /// exception is raised.
     pub fn play<'py>(&self, py: Python<'py>, track: Py<PyAny>) -> PyResult<Bound<'py, PyAny>> {
         let conn = self.connection.clone();
-
-        let songbird_track = if let Ok(track) = track.downcast_bound::<Track>(py) {
-            track.get().into_songbird_track()?
-        } else {
-            let track = track.call_method0(py, intern!(py, "into_track"))?;
-            let track = track.downcast_bound::<Track>(py)?;
-
-            track.get().into_songbird_track()?
-        };
+        let songbird_track = convert_track_to_songbird_track(py, track)?;
 
         future_into_py(py, async move {
             let handle = conn.play(songbird_track).await?;
+
+            Ok(TrackHandle::new(handle))
+        })
+    }
+
+    /// Similar to :meth:`play`, except that it stops all other sources attached to this connection.
+    pub fn play_only<'py>(&self, py: Python<'py>, track: Py<PyAny>) -> PyResult<Bound<'py, PyAny>> {
+        let conn = self.connection.clone();
+        let songbird_track = convert_track_to_songbird_track(py, track)?;
+
+        future_into_py(py, async move {
+            let handle = conn.play_only(songbird_track).await?;
 
             Ok(TrackHandle::new(handle))
         })
@@ -207,9 +212,7 @@ impl SongbirdClient {
         py: Python<'py>,
         source: Py<AudioSource>,
     ) -> PyResult<Bound<'py, PyAny>> {
-        let songbird_source = source.call_method0(py, intern!(py, "_get_songbird_source"))?;
-        let songbird_source = songbird_source.downcast_bound::<SongbirdSource>(py)?;
-        let input = songbird_source.get().0.input()?;
+        let input = convert_audio_source_to_songbird_input(py, source)?;
         let conn = self.connection.clone();
 
         future_into_py(py, async move {
@@ -218,4 +221,58 @@ impl SongbirdClient {
             Ok(TrackHandle::new(handle))
         })
     }
+
+    /// Similar to :meth:`play_input`, except that it stops all other sources attached to this connection.
+    pub fn play_only_input<'py>(
+        &self,
+        py: Python<'py>,
+        source: Py<AudioSource>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let input = convert_audio_source_to_songbird_input(py, source)?;
+        let conn = self.connection.clone();
+
+        future_into_py(py, async move {
+            let handle = conn.play_only_input(input).await?;
+
+            Ok(TrackHandle::new(handle))
+        })
+    }
+
+    pub fn set_bitrate<'py>(
+        &self,
+        py: Python<'py>,
+        bitrate: Bitrate,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let conn = self.connection.clone();
+
+        future_into_py(py, async move {
+            conn.set_bitrate(bitrate.into()).await?;
+
+            Ok(())
+        })
+    }
+}
+
+fn convert_track_to_songbird_track(
+    py: Python,
+    track: Py<PyAny>,
+) -> PyResult<songbird::tracks::Track> {
+    if let Ok(track) = track.downcast_bound::<Track>(py) {
+        track.get().into_songbird_track()
+    } else {
+        let track = track.call_method0(py, intern!(py, "into_track"))?;
+        let track = track.downcast_bound::<Track>(py)?;
+
+        track.get().into_songbird_track()
+    }
+}
+
+fn convert_audio_source_to_songbird_input(
+    py: Python,
+    source: Py<AudioSource>,
+) -> PyResult<songbird::input::Input> {
+    let songbird_source = source.call_method0(py, intern!(py, "_get_songbird_source"))?;
+    let songbird_source = songbird_source.downcast_bound::<SongbirdSource>(py)?;
+
+    Ok(songbird_source.get().0.input()?)
 }
