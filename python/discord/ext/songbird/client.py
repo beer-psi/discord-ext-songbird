@@ -86,6 +86,7 @@ class SongbirdClient(discord.VoiceProtocol):
         self.endpoint: Optional[str] = None
 
         self._track_handle: Optional[TrackHandle] = None
+        self._expecting_disconnect: bool = False
 
     async def _update_voice_state(
         self, guild_id: int, channel_id: Optional[int], self_deaf: bool, self_mute: bool
@@ -101,17 +102,20 @@ class SongbirdClient(discord.VoiceProtocol):
             self_mute=self_mute,
         )
 
-        if channel_id is None:
-            self.cleanup()
-
     @override
     async def on_voice_state_update(self, data: "GuildVoiceStatePayload", /) -> None:
         self.session_id = data["session_id"]
+        channel_id = data["channel_id"]
 
         await self._songbird.update_state(
             data["session_id"],
             int(data["channel_id"]) if data["channel_id"] is not None else None,  # pyright: ignore[reportUnnecessaryComparison]
         )
+
+        if channel_id is None and not self._expecting_disconnect:  # pyright: ignore[reportUnnecessaryComparison]
+            self.cleanup()
+        elif self._expecting_disconnect:
+            self._expecting_disconnect = False
 
     @override
     async def on_voice_server_update(self, data: "VoiceServerUpdatePayload", /) -> None:
@@ -147,6 +151,8 @@ class SongbirdClient(discord.VoiceProtocol):
     async def disconnect(self, *, force: bool = False) -> None:
         if not force and not await self.is_connected():
             return
+
+        self._expecting_disconnect = True
 
         self.stop()
 
