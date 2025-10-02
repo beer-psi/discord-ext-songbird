@@ -9,7 +9,15 @@ from discord.errors import ClientException
 from discord.utils import MISSING  # pyright: ignore[reportAny]
 from typing_extensions import override
 
-from ._native import AudioSource, Bitrate, Config, PlayError, TrackEvent, TrackHandle
+from ._native import (
+    AudioSource,
+    Bitrate,
+    Config,
+    ConnectionInvalid,
+    PlayError,
+    TrackEvent,
+    TrackHandle,
+)
 from ._native import SongbirdClient as NativeSongbirdClient
 from .track import Track
 
@@ -186,7 +194,10 @@ class SongbirdClient(discord.VoiceProtocol):
         if self._songbird is MISSING:
             return False
 
-        return await self._songbird.is_connected()
+        try:
+            return await self._songbird.is_connected()
+        except ConnectionInvalid:
+            return False
 
     async def play(
         self,
