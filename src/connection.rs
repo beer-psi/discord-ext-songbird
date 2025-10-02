@@ -62,7 +62,7 @@ impl VoiceConnection {
         // Workaround for songbird not propagating new voice state if disconnected
         match channel_id {
             Some(channel_id) => call.update_state(session_id, Some(channel_id.into())),
-            None => call.leave().await?,
+            None => self.disconnect().await?,
         }
 
         Ok(())
