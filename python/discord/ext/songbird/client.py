@@ -101,6 +101,9 @@ class SongbirdClient(discord.VoiceProtocol):
             self_mute=self_mute,
         )
 
+        if channel_id is None:
+            self.cleanup()
+
     @override
     async def on_voice_state_update(self, data: "GuildVoiceStatePayload", /) -> None:
         self.session_id = data["session_id"]
