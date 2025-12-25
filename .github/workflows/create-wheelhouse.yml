@@ -53,7 +53,7 @@ jobs:
                 }
             }
 
-            const packageName = TOML.parse(fs.readFileSync("pyproject.toml")).project.name;
+            const packageName = TOML.parse(fs.readFileSync("pyproject.toml", "utf-8")).project.name;
             const latestVersion = releases.sort((a, b) => new Date(b.created_at).valueOf() - new Date(a.created_at).valueOf())[0].tag_name.replace(/^v/u, "");
             const generatedDate = new Date().toISOString();
 
