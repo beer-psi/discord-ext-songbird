@@ -11,6 +11,8 @@ on:
       - trunk
     tags:
       - "*"
+    paths-ignore:
+      - ".github/workflows/create-wheelhouse.yml"
   pull_request:
   workflow_dispatch:
   release:

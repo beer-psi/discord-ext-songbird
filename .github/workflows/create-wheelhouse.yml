@@ -2,6 +2,11 @@ name: "Wheelhouse"
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - "trunk"
+    paths:
+      - ".github/workflows/create-wheelhouse.yml"
 
 jobs:
   wheelhouse:
@@ -20,13 +25,17 @@ jobs:
         run: |
           mkdir -p _site/discord-ext-songbird
           touch _site/.nojekyll
+          GENERATED_TIME=$(TZ=UTC date "+%Y-%m-%dT%H:%M:%SZ")
           cat <<EOF > _site/index.html
           <!DOCTYPE html>
           <html>
               <head>
                   <meta name="pypi:repository-version" content="1.4">
+                  <title>Simple index for https://github.com/beer-psi/discord-ext-songbird</title>
               </head>
               <body>
+                  <h1>Simple index for https://github.com/beer-psi/discord-ext-songbird</h1>
+                  <p>Generated on <time datetime="$GENERATED_TIME">$GENERATED_TIME</time>.</p>
                   <a href="discord-ext-songbird/">discord-ext-songbird</a>
               </body>
           </html>
@@ -58,6 +67,9 @@ jobs:
                 }
             }
 
+            const latestVersion = releases.sort((a, b) => new Date(b.created_at).valueOf() - new Date(a.created_at).valueOf())[0].tag_name.replace(/^v/u, "");
+            const generatedDate = new Date().toISOString();
+
             fs.writeFileSync(
                 "_site/discord-ext-songbird/index.html",
                 `
@@ -66,10 +78,25 @@ jobs:
                 <head>
                     <meta name="pypi:repository-version" content="1.4">
                     <meta name="pypi:project-status" content="active">
+                    <title>Links for discord-ext-songbird</title>
                 </head>
                 <body>
                     <h1>Links for discord-ext-songbird</h1>
+                    <p>
+                        Latest version:
+                        <input
+                            type="text"
+                            value="${latestVersion}"
+                            id="requirement"
+                            style="font-family: monospace; width: ${latestVersion.length}ch;"
+                            readonly="readonly"
+                        />
+                    </p>
+                    <p>Generated at <time datetime="${generatedDate}">${generatedDate}</time>.</p>
                     ${tags.join("\n")}
+                    <script>
+                        document.getElementById('requirement').onfocus = (e) => e.target.select();
+                    </script>
                 </body>
             </html>
             `
