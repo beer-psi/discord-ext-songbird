@@ -41,7 +41,7 @@ jobs:
             });
             const tags = [];
 
-            for (const release of releases.data) {
+            for (const release of releases) {
                 if (release.draft) {
                     continue;
                 }
