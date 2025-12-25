@@ -44,12 +44,20 @@ jobs:
                     continue;
                 }
 
+                const assetsByName = Object.fromEntries(release.assets.map(asset => [asset.name, asset]));
+
                 for (const asset of release.assets) {
                     if (!asset.name.endsWith(".whl") && !asset.name.endsWith(".tar.gz")) {
                         continue;
                     }
 
-                    tags.push(`<a href="${asset.browser_download_url}#${asset.digest.replace(":", "=")}">${asset.name}</a><br />`);
+                    if (asset.name.endsWith(".whl") && assetsByName[`${asset.name}.metadata`]) {
+                        const metadataHash = assetsByName[`${asset.name}.metadata`].digest.replace(":", "=");
+
+                        tags.push(`<a href="${asset.browser_download_url}#${asset.digest.replace(":", "=")}" data-dist-info-metadata="${metadataHash}" data-core-metadata="${metadataHash}">${asset.name}</a><br />`);
+                    } else {
+                        tags.push(`<a href="${asset.browser_download_url}#${asset.digest.replace(":", "=")}">${asset.name}</a><br />`);
+                    }
                 }
             }
 
