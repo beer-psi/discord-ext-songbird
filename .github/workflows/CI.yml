@@ -48,8 +48,14 @@ jobs:
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
           manylinux: auto
           before-script-linux: |
-            apt-get update
-            apt-get install -y pkg-config libssl-dev libopus-dev
+            if command -v apt-get &> /dev/null; then
+                apt-get update && apt-get install -y pkg-config libssl-dev libopus-dev
+            elif command -v yum &> /dev/null; then
+                yum install -y openssl-devel opus-devel
+            else
+                echo "Neither apt-get nor yum is installed. Please install a package manager."
+                exit 1
+            fi
       - name: Upload wheels
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
