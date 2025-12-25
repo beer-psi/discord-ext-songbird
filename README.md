@@ -12,6 +12,15 @@ its minimum Python version.
 [`songbird`]: https://docs.rs/songbird/latest/songbird/
 [`VoiceClient`]: https://discordpy.readthedocs.io/en/latest/api.html#discord.VoiceClient
 
+## Installation
+
+This package is not available on PyPI due to a name conflict. Instead, it is published
+on a local index:
+
+```
+pip install --index-url https://beer-psi.github.io/discord-ext-songbird discord-ext-songbird
+```
+
 ## Building
 
 A working Rust compiler with `rustc` and `cargo` is required to build this package.
