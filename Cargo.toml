@@ -21,7 +21,7 @@ abi3 = ["pyo3/abi3-py38"]
 async-trait = "0.1.89"
 pyo3 = { version = "0.26.0", features = ["extension-module", "uuid"] }
 pyo3-async-runtimes = { version = "0.26.0", features = ["tokio-runtime"] }
-reqwest = "0.12.23"
+reqwest = { version = "0.12.23", default-features = false, features = ["rustls-tls", "charset", "http2", "system-proxy"] }
 thiserror = "2.0.16"
 tokio = { version = "1.47.1", features = ["sync", "time"] }
 uuid = "1.18.1"
