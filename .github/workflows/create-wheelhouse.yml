@@ -1,0 +1,86 @@
+name: "Wheelhouse"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  wheelhouse:
+    runs-on: "ubuntu-latest"
+    permissions:
+      pages: "write"
+      id-token: "write"
+    environment:
+      name: "github-pages"
+      url: "${{ steps.deployment.outputs.page_url }}"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5" # v4
+
+      - name: "Create wheelhouse"
+        run: |
+          mkdir -p _site/discord-ext-songbird
+          touch _site/.nojekyll
+          cat <<EOF > _site/index.html
+          <!DOCTYPE html>
+          <html>
+              <body>
+                  <a href="discord-ext-songbird/">discord-ext-songbird</a>
+              </body>
+          </html>
+          EOF
+
+      # While I'd love to quote every YAML string ever, this one stays unquoted because Zed
+      # has specific syntax highlighting for github-script for whatever reason.
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const fs = require("fs");
+            const releases = github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+            });
+            const tags = [];
+
+            for (const release of releases.data) {
+                if (release.draft) {
+                    continue;
+                }
+
+                for (const asset of release.assets) {
+                    if (!asset.name.endsWith(".whl") && !asset.name.endsWith(".tar.gz")) {
+                        continue;
+                    }
+
+                    tags.push(`<a href="${asset.browser_download_url}#${asset.digest.replace(":", "=")}">${asset.name}</a><br />`);
+                }
+            }
+
+            fs.writeFileSync(
+                "_site/discord-ext-songbird/index.html",
+                `
+            <!doctype html>
+            <html>
+                <body>
+                    <h1>Links for discord-ext-songbird</h1>
+                    ${tags.join("\n")}
+                </body>
+            </html>
+            `
+            );
+
+      - uses: "actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b" # v4
+        with:
+          path: "_site/"
+
+  deploy:
+    needs: "wheelhouse"
+    permissions:
+      pages: "write"
+      id-token: "write"
+    environment:
+      name: "github-pages"
+      url: "${{ steps.deployment.outputs.page_url }}"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e" # v4
+        id: "deployment"
