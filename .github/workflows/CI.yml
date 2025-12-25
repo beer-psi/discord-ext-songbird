@@ -189,7 +189,7 @@ jobs:
       - name: Upload wheels to GitHub
         if: ${{ github.event_name == 'release' }}
         run: |
-          gh release upload -r "${{ github.repository }}" --clobber "${{ github.event.release.tag_name }}" wheels-*/*
+          gh release upload --repo "${{ github.repository }}" --clobber "${{ github.event.release.tag_name }}" wheels-*/*
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
 
