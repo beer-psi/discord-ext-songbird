@@ -1,6 +1,6 @@
 [project]
 name = "discord-ext-songbird"
-dynamic = ["version"]
+version = "0.1.0.post1"
 requires-python = ">=3.8"
 authors = [{ name = "beerpsi", email = "beerpsi@duck.com" }]
 description = "songbird wrapper for discord.py"
