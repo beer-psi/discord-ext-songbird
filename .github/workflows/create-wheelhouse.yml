@@ -2,6 +2,8 @@ name: "Wheelhouse"
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: ["create-wheelhouse"]
   push:
     branches:
       - "trunk"
