@@ -62,7 +62,7 @@ impl Track {
             let songbird_source = self
                 .source
                 .call_method0(py, intern!(py, "_get_songbird_source"))?;
-            let songbird_source = songbird_source.downcast_bound::<SongbirdSource>(py)?;
+            let songbird_source = songbird_source.cast_bound::<SongbirdSource>(py)?;
 
             PyResult::<songbird::input::Input>::Ok(songbird_source.get().0.input()?)
         })?;

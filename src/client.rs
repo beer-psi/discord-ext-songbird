@@ -257,11 +257,11 @@ fn convert_track_to_songbird_track(
     py: Python,
     track: Py<PyAny>,
 ) -> PyResult<songbird::tracks::Track> {
-    if let Ok(track) = track.downcast_bound::<Track>(py) {
+    if let Ok(track) = track.cast_bound::<Track>(py) {
         track.get().into_songbird_track()
     } else {
         let track = track.call_method0(py, intern!(py, "into_track"))?;
-        let track = track.downcast_bound::<Track>(py)?;
+        let track = track.cast_bound::<Track>(py)?;
 
         track.get().into_songbird_track()
     }
@@ -272,7 +272,7 @@ fn convert_audio_source_to_songbird_input(
     source: Py<AudioSource>,
 ) -> PyResult<songbird::input::Input> {
     let songbird_source = source.call_method0(py, intern!(py, "_get_songbird_source"))?;
-    let songbird_source = songbird_source.downcast_bound::<SongbirdSource>(py)?;
+    let songbird_source = songbird_source.cast_bound::<SongbirdSource>(py)?;
 
     Ok(songbird_source.get().0.input()?)
 }
