@@ -210,7 +210,7 @@ jobs:
       - name: Update wheelhouse
         if: ${{ github.event_name == 'release' }}
         run: |
-          gh workflow run --repo "${{ github.repository }}" 218702615
+          gh api -X POST "repos/${{ github.repository }}/dispatches" -f event_type=create-wheelhouse
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
 
