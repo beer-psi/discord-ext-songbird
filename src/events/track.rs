@@ -4,7 +4,11 @@ use songbird::{tracks::PlayMode, Event, EventContext, EventHandler};
 
 use crate::error::{PyPlayError, SongbirdError};
 
-#[pyclass(module = "discord.ext.songbird._native.events.track", frozen)]
+#[pyclass(
+    module = "discord.ext.songbird._native.events.track",
+    frozen,
+    from_py_object
+)]
 #[derive(Clone, Copy, Debug)]
 pub enum TrackEvent {
     Play,

@@ -9,7 +9,7 @@ use songbird::driver::DisposalThread;
 use crate::constants::DISPOSAL_THREAD;
 use crate::error::SongbirdError;
 
-#[pyclass(module = "discord.ext.songbird._native")]
+#[pyclass(from_py_object, module = "discord.ext.songbird._native")]
 #[derive(Clone, Debug)]
 pub struct Config {
     pub inner: Arc<RwLock<songbird::Config>>,
@@ -133,7 +133,7 @@ impl Config {
     }
 }
 
-#[pyclass(module = "discord.ext.songbird._native", frozen)]
+#[pyclass(module = "discord.ext.songbird._native", frozen, from_py_object)]
 #[derive(Clone, Copy, Debug)]
 pub enum CryptoMode {
     Aes256Gcm,
@@ -161,7 +161,7 @@ impl TryFrom<songbird::driver::CryptoMode> for CryptoMode {
     }
 }
 
-#[pyclass(module = "discord.ext.songbird._native", frozen)]
+#[pyclass(module = "discord.ext.songbird._native", frozen, from_py_object)]
 #[derive(Clone, Copy, Debug)]
 pub enum MixMode {
     Mono,
@@ -186,7 +186,7 @@ impl From<songbird::driver::MixMode> for MixMode {
     }
 }
 
-#[pyclass(module = "discord.ext.songbird._native", frozen)]
+#[pyclass(module = "discord.ext.songbird._native", frozen, from_py_object)]
 #[derive(Clone, Copy, Debug)]
 pub enum RetryStrategy {
     _Every(Duration),

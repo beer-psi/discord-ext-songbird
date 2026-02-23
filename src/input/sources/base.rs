@@ -3,7 +3,11 @@ use songbird::input::Input;
 
 use crate::error::SongbirdResult;
 
-#[pyclass(subclass, module = "discord.ext.songbird._native.input.sources")]
+#[pyclass(
+    subclass,
+    from_py_object,
+    module = "discord.ext.songbird._native.input.sources"
+)]
 #[derive(Clone, Debug)]
 pub struct AudioSource {}
 

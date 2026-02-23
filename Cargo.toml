@@ -1,6 +1,6 @@
 [package]
 name = "discord-ext-songbird"
-version = "0.1.1"
+version = "0.1.2-alpha.1"
 authors = ["beerpsi <beerpsi@duck.com>"]
 edition = "2021"
 rust-version = "1.83"
@@ -19,15 +19,16 @@ abi3 = ["pyo3/abi3-py38"]
 
 [dependencies]
 async-trait = "0.1.89"
-pyo3 = { version = "0.27.2", features = ["extension-module", "uuid"] }
-pyo3-async-runtimes = { version = "0.27.0", features = ["tokio-runtime"] }
+pyo3 = { version = "0.28.2", features = ["extension-module", "uuid"] }
+pyo3-async-runtimes = { version = "0.28.0", features = ["tokio-runtime"] }
 reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls", "charset", "http2", "system-proxy"] }
 thiserror = "2.0.17"
 tokio = { version = "1.48.0", features = ["sync", "time"] }
 uuid = "1.19.0"
 
 [dependencies.songbird]
-version = "0.5.0"
+git = "https://github.com/beerpsi-forks/songbird.git"
+branch = "davey"
 default-features = false
 features = ["driver", "gateway", "rustls", "tungstenite"]
 

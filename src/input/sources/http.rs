@@ -16,7 +16,7 @@ use crate::{
     input::sources::base::{AudioSource, IntoSongbirdInput, SongbirdSource},
 };
 
-#[pyclass(extends=AudioSource)]
+#[pyclass(from_py_object, extends=AudioSource)]
 #[derive(Clone, Debug)]
 pub struct HttpRequest {
     inner: Arc<RwLock<Option<SongbirdHttpRequest>>>,

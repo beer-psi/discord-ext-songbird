@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 
-#[pyclass(frozen, module = "discord.ext.songbird._native")]
+#[pyclass(frozen, from_py_object, module = "discord.ext.songbird._native")]
 #[derive(Clone, Copy, Debug)]
 pub enum Bitrate {
     _BitsPerSecond(i32),
