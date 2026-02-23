@@ -2,6 +2,7 @@
 # This example requires the 'message_content' privileged intent to function.
 
 import asyncio
+import logging
 import os
 
 import discord
@@ -31,6 +32,11 @@ ytdl = yt_dlp.YoutubeDL(
         "source_address": "0.0.0.0",
     }
 )
+
+discord.utils.setup_logging(root=True)
+logging.getLogger().setLevel(logging.WARN)
+logging.getLogger("discord").setLevel(logging.INFO)
+logging.getLogger("songbird").setLevel(logging.INFO)
 
 
 class Music(commands.Cog):

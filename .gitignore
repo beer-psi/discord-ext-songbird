@@ -77,3 +77,4 @@ wheelhouse/
 
 Cargo.lock
 uv.lock
+*.opus

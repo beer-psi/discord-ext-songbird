@@ -21,6 +21,14 @@ on a local index:
 pip install --index-url https://beer-psi.github.io/discord-ext-songbird discord-ext-songbird
 ```
 
+## Logging
+
+This library uses the `songbird` standard library logger.
+
+```python
+logging.getLibrary("songbird").setLevel(logging.INFO)
+```
+
 ## Building
 
 A working Rust compiler with `rustc` and `cargo` is required to build this package.

@@ -18,6 +18,10 @@ use crate::error::{
 /// A Python module implemented in Rust.
 #[pymodule(gil_used = false, name = "_native")]
 fn discord_ext_songbird(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    pyo3_log::Logger::default()
+        .install()
+        .expect("Failed to install logger");
+
     m.add_class::<client::SongbirdClient>()?;
 
     m.add_class::<bitrate::Bitrate>()?;
