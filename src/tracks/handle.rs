@@ -69,16 +69,25 @@ impl TrackHandle {
         })
     }
 
+    /// Attach an event handler to an audio track. This method requires an active event loop.
     pub fn add_event(&self, py: Python, event: TrackEvent, callback: Py<PyAny>) -> PyResult<()> {
         if !callback.bind(py).is_callable() {
             return Err(PyTypeError::new_err("event handler must be callable"));
         }
 
+        let task_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+
         py.detach(move || {
             let songbird_event: SongbirdTrackEvent = event.into();
 
             self.inner
-                .add_event(songbird_event.into(), PythonTrackEventHandler { callback })
+                .add_event(
+                    songbird_event.into(),
+                    PythonTrackEventHandler {
+                        callback,
+                        task_locals,
+                    },
+                )
                 .map_err(|e| SongbirdError::ControlError(e))?;
 
             Ok(())

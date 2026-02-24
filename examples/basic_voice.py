@@ -39,6 +39,13 @@ logging.getLogger("discord").setLevel(logging.INFO)
 logging.getLogger("songbird").setLevel(logging.INFO)
 
 
+def make_callback(ctx, query):
+    async def callback(uuid):
+        await ctx.send(f"Finished playing {query} ({uuid})")
+
+    return callback
+
+
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -57,7 +64,13 @@ class Music(commands.Cog):
         """Plays a file from the local filesystem"""
 
         source = songbird.File(query)
-        await ctx.voice_client.play_input(source)
+        track_handle = await ctx.voice_client.play_input(source)
+
+        track_handle.add_event(
+            songbird.TrackEvent.End,
+            lambda uuid: print(f"Finished playing {query} {uuid}"),
+        )
+        track_handle.add_event(songbird.TrackEvent.End, make_callback(ctx, query))
 
         await ctx.send(f"Now playing: {query}")
 

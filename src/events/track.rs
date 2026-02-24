@@ -1,6 +1,8 @@
 use async_trait::async_trait;
-use pyo3::{prelude::*, Py, PyAny, Python};
+use pyo3::{prelude::*, sync::PyOnceLock, types::PyFunction, Py, PyAny, Python};
+use pyo3_async_runtimes::TaskLocals;
 use songbird::{tracks::PlayMode, Event, EventContext, EventHandler};
+use tracing::error;
 
 use crate::error::{PyPlayError, SongbirdError};
 
@@ -53,6 +55,46 @@ impl From<TrackEvent> for songbird::events::TrackEvent {
 
 pub struct PythonTrackEventHandler {
     pub callback: Py<PyAny>,
+    pub task_locals: TaskLocals,
+}
+
+macro_rules! dispatch_callback {
+    ($callback:expr, $task_locals:expr, $args:expr) => {
+        tokio::task::spawn_blocking(move || {
+            let result = Python::attach(|py| -> PyResult<_> {
+                let result = match $callback.call1(py, $args) {
+                    Ok(r) => {
+                        $callback.drop_ref(py);
+                        r.into_bound(py)
+                    }
+                    Err(e) => {
+                        $callback.drop_ref(py);
+                        return Err(e);
+                    }
+                };
+                let future = if is_awaitable(&result)? {
+                    Ok(Some(pyo3_async_runtimes::into_future_with_locals(
+                        &$task_locals,
+                        result,
+                    )?))
+                } else {
+                    Ok(None)
+                };
+
+                future
+            });
+
+            match result {
+                Ok(Some(future)) => {
+                    tokio::task::spawn(future);
+                },
+                Ok(None) => {},
+                Err(e) => {
+                    error!(error = ?e, "could not dispatch event callback");
+                }
+            }
+        });
+    };
 }
 
 #[async_trait]
@@ -63,28 +105,21 @@ impl EventHandler for PythonTrackEventHandler {
                 // this shouldn't be terribly expensive, it's just a call to
                 // Py_INCREF
                 let callback = Python::attach(|py| self.callback.clone_ref(py));
+                let task_locals = self.task_locals.clone();
                 let handle_uuid = handle.uuid().clone();
 
                 match state.playing {
                     PlayMode::Errored(_) => {
                         let msg = format!("{:?}", state.playing);
 
-                        tokio::task::spawn_blocking(move || {
-                            let py_err: PyErr = PyPlayError::new_err(msg);
-
-                            Python::attach(|py| {
-                                let _ = callback.call1(py, (handle_uuid, py_err));
-                                callback.drop_ref(py);
-                            });
-                        });
+                        dispatch_callback!(
+                            callback,
+                            task_locals,
+                            (handle_uuid, PyPlayError::new_err(msg))
+                        );
                     }
                     _ => {
-                        tokio::task::spawn_blocking(move || {
-                            Python::attach(|py| {
-                                let _ = callback.call1(py, (handle_uuid,));
-                                callback.drop_ref(py);
-                            });
-                        });
+                        dispatch_callback!(callback, task_locals, (handle_uuid,));
                     }
                 }
             }
@@ -92,4 +127,14 @@ impl EventHandler for PythonTrackEventHandler {
 
         None
     }
+}
+
+fn is_awaitable(object: &Bound<'_, PyAny>) -> PyResult<bool> {
+    static INSPECT_MODULE: PyOnceLock<Py<PyFunction>> = PyOnceLock::new();
+    let py = object.py();
+
+    INSPECT_MODULE
+        .import(py, "inspect", "isawaitable")?
+        .call1((object,))?
+        .extract()
 }

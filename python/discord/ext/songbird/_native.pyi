@@ -1,5 +1,5 @@
 import os
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from datetime import timedelta
 from enum import IntEnum
 from typing import Any, Literal, Protocol, overload
@@ -199,16 +199,26 @@ class TrackHandle:
             TrackEvent.Preparing,
             TrackEvent.Playable,
         ],
-        callback: Callable[[UUID], Any],  # pyright: ignore[reportExplicitAny]
-    ) -> None: ...
+        callback: Callable[[UUID], Any | Awaitable[Any]],  # pyright: ignore[reportExplicitAny]
+    ) -> None:
+        """Attach an event handler to an audio track. This method requires an active event loop."""
+        ...
     @overload
     def add_event(
         self,
         event: Literal[TrackEvent.Error],
-        callback: Callable[[UUID, PlayError], Any],  # pyright: ignore[reportExplicitAny]
-    ) -> None: ...
+        callback: Callable[[UUID, PlayError], Any | Awaitable[Any]],  # pyright: ignore[reportExplicitAny]
+    ) -> None:
+        """Attach an event handler to an audio track. This method requires an active event loop."""
+        ...
     @overload
-    def add_event(self, event: TrackEvent, callback: Callable[..., Any]) -> None: ...  # pyright: ignore[reportExplicitAny]
+    def add_event(
+        self,
+        event: TrackEvent,
+        callback: Callable[..., Any | Awaitable[Any]],  # pyright: ignore[reportExplicitAny]
+    ) -> None:
+        """Attach an event handler to an audio track. This method requires an active event loop."""
+        ...
     def enable_loop(self) -> None: ...
     def disable_loop(self) -> None: ...
     def loop_for(self, count: int) -> None: ...
