@@ -62,7 +62,7 @@ class SongbirdClient(discord.VoiceProtocol):
     :attr channel: The channel connected to.
     """
 
-    channel: "VocalGuildChannel"  # pyright: ignore[reportIncompatibleVariableOverride]
+    channel: "VocalGuildChannel"
 
     def __init__(
         self,
@@ -105,14 +105,17 @@ class SongbirdClient(discord.VoiceProtocol):
     @override
     async def on_voice_state_update(self, data: "GuildVoiceStatePayload", /) -> None:
         self.session_id = data["session_id"]
-        channel_id = data["channel_id"]
+        channel_id = int(data["channel_id"]) if data["channel_id"] is not None else None  # pyright: ignore[reportUnnecessaryComparison]
 
-        await self._songbird.update_state(
-            data["session_id"],
-            int(data["channel_id"]) if data["channel_id"] is not None else None,  # pyright: ignore[reportUnnecessaryComparison]
+        await self._songbird.update_state(self.session_id, channel_id)
+
+        self.channel = (  # pyright: ignore[reportAttributeAccessIssue, reportIncompatibleVariableOverride]
+            self.channel.guild.get_channel(channel_id)
+            if channel_id is not None
+            else None
         )
 
-        if channel_id is None and not self._expecting_disconnect:  # pyright: ignore[reportUnnecessaryComparison]
+        if channel_id is None and not self._expecting_disconnect:
             self.cleanup()
         elif self._expecting_disconnect:
             self._expecting_disconnect = False
