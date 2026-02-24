@@ -64,7 +64,7 @@ class Music(commands.Cog):
         """Plays a file from the local filesystem"""
 
         source = songbird.File(query)
-        track_handle = await ctx.voice_client.play_input(source)
+        track_handle = ctx.voice_client.play_input(source)
 
         track_handle.add_event(
             songbird.TrackEvent.End,
@@ -88,7 +88,7 @@ class Music(commands.Cog):
                 data = data["entries"][0]
 
             source = songbird.HttpRequest(data["url"])  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            await ctx.voice_client.play_input(source)
+            ctx.voice_client.play_input(source)
 
         await ctx.send(f"Now playing: {data.get('title')}")
 

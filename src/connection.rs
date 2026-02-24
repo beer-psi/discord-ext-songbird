@@ -41,8 +41,8 @@ impl VoiceConnection {
         }
     }
 
-    pub async fn update_server(&self, endpoint: String, token: String) -> SongbirdResult<()> {
-        let Some(call) = &mut *self.call.lock().await else {
+    pub fn update_server(&self, endpoint: String, token: String) -> SongbirdResult<()> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
             return Err(SongbirdError::ConnectionInvalid);
         };
 
@@ -50,13 +50,13 @@ impl VoiceConnection {
         Ok(())
     }
 
-    pub async fn update_state<C: Into<ChannelId>>(
+    pub fn update_state<C: Into<ChannelId>>(
         &self,
         session_id: String,
         channel_id: Option<C>,
     ) -> SongbirdResult<()> {
         // Workaround for songbird not propagating new voice state if disconnected
-        let Some(call) = &mut *self.call.lock().await else {
+        let Some(call) = &mut *self.call.blocking_lock() else {
             return Err(SongbirdError::ConnectionInvalid);
         };
 
@@ -146,8 +146,8 @@ impl VoiceConnection {
         Ok(())
     }
 
-    pub async fn is_connected(&self) -> SongbirdResult<bool> {
-        let Some(call) = &mut *self.call.lock().await else {
+    pub fn is_connected(&self) -> SongbirdResult<bool> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
             return Err(SongbirdError::ConnectionInvalid);
         };
 
@@ -174,40 +174,40 @@ impl VoiceConnection {
         Ok(())
     }
 
-    pub async fn play(&self, track: Track) -> SongbirdResult<TrackHandle> {
-        let Some(call) = &mut *self.call.lock().await else {
+    pub fn play(&self, track: Track) -> SongbirdResult<TrackHandle> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
             return Err(SongbirdError::ConnectionInvalid);
         };
 
         Ok(call.play(track))
     }
 
-    pub async fn play_only(&self, track: Track) -> SongbirdResult<TrackHandle> {
-        let Some(call) = &mut *self.call.lock().await else {
+    pub fn play_only(&self, track: Track) -> SongbirdResult<TrackHandle> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
             return Err(SongbirdError::ConnectionInvalid);
         };
 
         Ok(call.play_only(track))
     }
 
-    pub async fn play_input(&self, input: Input) -> SongbirdResult<TrackHandle> {
-        let Some(call) = &mut *self.call.lock().await else {
+    pub fn play_input(&self, input: Input) -> SongbirdResult<TrackHandle> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
             return Err(SongbirdError::ConnectionInvalid);
         };
 
         Ok(call.play_input(input))
     }
 
-    pub async fn play_only_input(&self, input: Input) -> SongbirdResult<TrackHandle> {
-        let Some(call) = &mut *self.call.lock().await else {
+    pub fn play_only_input(&self, input: Input) -> SongbirdResult<TrackHandle> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
             return Err(SongbirdError::ConnectionInvalid);
         };
 
         Ok(call.play_only_input(input))
     }
 
-    pub async fn set_bitrate(&self, bitrate: Bitrate) -> SongbirdResult<()> {
-        let Some(call) = &mut *self.call.lock().await else {
+    pub fn set_bitrate(&self, bitrate: Bitrate) -> SongbirdResult<()> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
             return Err(SongbirdError::ConnectionInvalid);
         };
 

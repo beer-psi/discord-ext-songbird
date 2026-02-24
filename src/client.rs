@@ -54,35 +54,19 @@ impl SongbirdClient {
     }
 
     /// Updates the voice server data.
-    pub fn update_server<'py>(
-        &self,
-        py: Python<'py>,
-        endpoint: String,
-        token: String,
-    ) -> PyResult<Bound<'py, PyAny>> {
+    pub fn update_server(&self, endpoint: String, token: String) -> PyResult<()> {
         let conn = self.connection.clone();
 
-        future_into_py(py, async move {
-            conn.update_server(endpoint, token).await?;
-            Ok(())
-        })
+        conn.update_server(endpoint, token).map_err(|e| e.into())
     }
 
     /// Updates the internal voice state of the current user.
-    pub fn update_state<'py>(
-        &self,
-        py: Python<'py>,
-        session_id: String,
-        channel_id: Option<NonZeroU64>,
-    ) -> PyResult<Bound<'py, PyAny>> {
+    pub fn update_state(&self, session_id: String, channel_id: Option<NonZeroU64>) -> PyResult<()> {
         let conn = self.connection.clone();
+        let channel_id: Option<ChannelId> = channel_id.map(|c| c.into());
 
-        future_into_py(py, async move {
-            let channel_id: Option<ChannelId> = channel_id.map(|c| c.into());
-
-            conn.update_state(session_id, channel_id).await?;
-            Ok(())
-        })
+        conn.update_state(session_id, channel_id)
+            .map_err(|e| e.into())
     }
 
     /// Connect to the voice channel specified at creation.
@@ -130,10 +114,10 @@ impl SongbirdClient {
     }
 
     /// Indicates if the client is connected to a voice channel.
-    pub fn is_connected<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+    pub fn is_connected(&self) -> PyResult<bool> {
         let conn = self.connection.clone();
 
-        future_into_py(py, async move { Ok(conn.is_connected().await?) })
+        conn.is_connected().map_err(|e| e.into())
     }
 
     pub fn mute<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -176,76 +160,48 @@ impl SongbirdClient {
     ///
     /// The underlying audio source is consumed. If it is reused, a :class:`SourceConsumed`
     /// exception is raised.
-    pub fn play<'py>(&self, py: Python<'py>, track: Py<Track>) -> PyResult<Bound<'py, PyAny>> {
+    pub fn play(&self, track: Py<Track>) -> PyResult<TrackHandle> {
         let conn = self.connection.clone();
-        let songbird_track = track.bind(py).borrow().into_songbird_track(py)?;
+        let songbird_track = Python::attach(|py| track.bind(py).borrow().into_songbird_track(py))?;
+        let handle = conn.play(songbird_track)?;
 
-        future_into_py(py, async move {
-            let handle = conn.play(songbird_track).await?;
-
-            Ok(TrackHandle::new(handle))
-        })
+        Ok(TrackHandle::new(handle))
     }
 
     /// Similar to :meth:`play`, except that it stops all other sources attached to this connection.
-    pub fn play_only<'py>(&self, py: Python<'py>, track: Py<Track>) -> PyResult<Bound<'py, PyAny>> {
+    pub fn play_only(&self, track: Py<Track>) -> PyResult<TrackHandle> {
         let conn = self.connection.clone();
-        let songbird_track = track.bind(py).borrow().into_songbird_track(py)?;
+        let songbird_track = Python::attach(|py| track.bind(py).borrow().into_songbird_track(py))?;
+        let handle = conn.play_only(songbird_track)?;
 
-        future_into_py(py, async move {
-            let handle = conn.play_only(songbird_track).await?;
-
-            Ok(TrackHandle::new(handle))
-        })
+        Ok(TrackHandle::new(handle))
     }
 
     /// Plays the given audio source.
     ///
     /// The audio source is consumed. If it is reused, a :class:`SourceConsumed`
     /// exception is raised.
-    pub fn play_input<'py>(
-        &self,
-        py: Python<'py>,
-        source: Py<AudioSource>,
-    ) -> PyResult<Bound<'py, PyAny>> {
-        let input = convert_audio_source_to_songbird_input(py, source)?;
+    pub fn play_input(&self, source: Py<AudioSource>) -> PyResult<TrackHandle> {
+        let input = Python::attach(|py| convert_audio_source_to_songbird_input(py, source))?;
         let conn = self.connection.clone();
+        let handle = conn.play_input(input)?;
 
-        future_into_py(py, async move {
-            let handle = conn.play_input(input).await?;
-
-            Ok(TrackHandle::new(handle))
-        })
+        Ok(TrackHandle::new(handle))
     }
 
     /// Similar to :meth:`play_input`, except that it stops all other sources attached to this connection.
-    pub fn play_only_input<'py>(
-        &self,
-        py: Python<'py>,
-        source: Py<AudioSource>,
-    ) -> PyResult<Bound<'py, PyAny>> {
-        let input = convert_audio_source_to_songbird_input(py, source)?;
+    pub fn play_only_input(&self, source: Py<AudioSource>) -> PyResult<TrackHandle> {
+        let input = Python::attach(|py| convert_audio_source_to_songbird_input(py, source))?;
         let conn = self.connection.clone();
+        let handle = conn.play_only_input(input)?;
 
-        future_into_py(py, async move {
-            let handle = conn.play_only_input(input).await?;
-
-            Ok(TrackHandle::new(handle))
-        })
+        Ok(TrackHandle::new(handle))
     }
 
-    pub fn set_bitrate<'py>(
-        &self,
-        py: Python<'py>,
-        bitrate: Bitrate,
-    ) -> PyResult<Bound<'py, PyAny>> {
+    pub fn set_bitrate<'py>(&self, bitrate: Bitrate) -> PyResult<()> {
         let conn = self.connection.clone();
 
-        future_into_py(py, async move {
-            conn.set_bitrate(bitrate.into()).await?;
-
-            Ok(())
-        })
+        conn.set_bitrate(bitrate.into()).map_err(|e| e.into())
     }
 }
 

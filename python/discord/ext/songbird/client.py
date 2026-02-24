@@ -107,7 +107,7 @@ class SongbirdClient(discord.VoiceProtocol):
         self.session_id = data["session_id"]
         channel_id = int(data["channel_id"]) if data["channel_id"] is not None else None  # pyright: ignore[reportUnnecessaryComparison]
 
-        await self._songbird.update_state(self.session_id, channel_id)
+        self._songbird.update_state(self.session_id, channel_id)
 
         self.channel = (  # pyright: ignore[reportAttributeAccessIssue, reportIncompatibleVariableOverride]
             self.channel.guild.get_channel(channel_id)
@@ -128,7 +128,7 @@ class SongbirdClient(discord.VoiceProtocol):
         if self.token is None or self.endpoint is None:  # pyright: ignore[reportUnnecessaryComparison]
             return
 
-        await self._songbird.update_server(self.endpoint, self.token)
+        self._songbird.update_server(self.endpoint, self.token)
 
     @override
     async def connect(
@@ -152,7 +152,7 @@ class SongbirdClient(discord.VoiceProtocol):
 
     @override
     async def disconnect(self, *, force: bool = False) -> None:
-        if not force and not await self.is_connected():
+        if not force and not self.is_connected():
             return
 
         self._expecting_disconnect = True
@@ -177,7 +177,7 @@ class SongbirdClient(discord.VoiceProtocol):
         Alternatively, :meth:`Bitrate.auto` and :meth:`Bitrate.max` are available.
         """
 
-        await self._songbird.set_bitrate(bitrate)
+        self._songbird.set_bitrate(bitrate)
 
     async def move_to(
         self,
@@ -200,18 +200,18 @@ class SongbirdClient(discord.VoiceProtocol):
             channel.id if channel is not None else None, timeout
         )
 
-    async def is_connected(self) -> bool:
+    def is_connected(self) -> bool:
         """Whether the client is connected to a voice channel."""
 
         if self._songbird is MISSING:
             return False
 
         try:
-            return await self._songbird.is_connected()
+            return self._songbird.is_connected()
         except ConnectionInvalid:
             return False
 
-    async def play(
+    def play(
         self,
         track: Track,
         *,
@@ -243,10 +243,10 @@ class SongbirdClient(discord.VoiceProtocol):
         if self._track_handle is not None:
             raise ClientException("Already playing audio.")
 
-        if not await self.is_connected():
+        if not self.is_connected():
             raise ClientException("Not connected to voice.")
 
-        self._track_handle = await self._songbird.play(track)
+        self._track_handle = self._songbird.play(track)
 
         def on_end(uuid: UUID, error: Optional[PlayError] = None):
             if after is not None:
@@ -269,7 +269,7 @@ class SongbirdClient(discord.VoiceProtocol):
 
         return self._track_handle
 
-    async def play_input(
+    def play_input(
         self,
         input: AudioSource,
         *,
@@ -288,10 +288,10 @@ class SongbirdClient(discord.VoiceProtocol):
         if self._track_handle is not None:
             raise ClientException("Already playing audio.")
 
-        if not await self.is_connected():
+        if not self.is_connected():
             raise ClientException("Not connected to voice.")
 
-        self._track_handle = await self._songbird.play_input(input)
+        self._track_handle = self._songbird.play_input(input)
 
         def on_end(uuid: UUID, error: Optional[PlayError] = None):
             if uuid != self.track_uuid:
