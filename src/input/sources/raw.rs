@@ -14,7 +14,12 @@ use crate::{
 /// This can be subclassed to provide custom audio implementations.
 ///
 /// At a minimum, any subclasses must implement :meth:`read`.
-#[pyclass(from_py_object, extends=AudioSource, subclass)]
+#[pyclass(
+    from_py_object,
+    subclass,
+    extends = AudioSource,
+    module = "discord.ext.songbird._native.input.sources"
+)]
 #[derive(Clone, Debug)]
 pub struct RawAudioSource {}
 

@@ -1,11 +1,7 @@
 use pyo3::prelude::*;
 use songbird::tracks::LoopState as SongbirdLoopState;
 
-#[pyclass(
-    module = "discord.ext.songbird._native.tracks.looping",
-    frozen,
-    from_py_object
-)]
+#[pyclass(module = "discord.ext.songbird._native.tracks", frozen, from_py_object)]
 #[derive(Clone, Copy, Debug)]
 pub enum LoopState {
     _Infinite(),

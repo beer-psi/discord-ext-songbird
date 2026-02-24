@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 use songbird::tracks::PlayMode as SongbirdPlayMode;
 
-#[pyclass(module = "discord.ext.songbird._native.tracks.mode", from_py_object)]
+#[pyclass(module = "discord.ext.songbird._native.tracks", from_py_object)]
 #[derive(Clone, Copy, Debug)]
 pub enum PlayMode {
     Play,

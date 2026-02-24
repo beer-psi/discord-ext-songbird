@@ -16,7 +16,11 @@ use crate::{
     input::sources::base::{AudioSource, IntoSongbirdInput, SongbirdSource},
 };
 
-#[pyclass(from_py_object, extends=AudioSource)]
+#[pyclass(
+    from_py_object,
+    extends = AudioSource,
+    module = "discord.ext.songbird._native.input.sources"
+)]
 #[derive(Clone, Debug)]
 pub struct HttpRequest {
     inner: Arc<RwLock<Option<SongbirdHttpRequest>>>,
