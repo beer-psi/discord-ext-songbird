@@ -96,11 +96,8 @@ class SongbirdClient(discord.VoiceProtocol):
                 f"voice state hook unexpectedly called for guild ID {guild_id}"
             )
 
-        self.channel = (  # pyright: ignore[reportAttributeAccessIssue]
-            self.channel.guild.get_channel(channel_id)
-            if channel_id is not None
-            else None
-        )
+        if channel_id is not None and self.channel is not None:  # pyright: ignore[reportUnnecessaryComparison]
+            self.channel = self.channel.guild.get_channel(channel_id)  # pyright: ignore[reportAttributeAccessIssue]
 
         await self.channel.guild.change_voice_state(
             channel=discord.Object(id=channel_id) if channel_id is not None else None,
@@ -117,7 +114,7 @@ class SongbirdClient(discord.VoiceProtocol):
 
         self.channel = (  # pyright: ignore[reportAttributeAccessIssue, reportIncompatibleVariableOverride]
             self.channel.guild.get_channel(channel_id)
-            if channel_id is not None
+            if channel_id is not None and self.channel is not None  # pyright: ignore[reportUnnecessaryComparison]
             else None
         )
 

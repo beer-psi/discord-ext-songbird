@@ -37,6 +37,7 @@ discord.utils.setup_logging(root=True)
 logging.getLogger().setLevel(logging.WARN)
 logging.getLogger("discord").setLevel(logging.INFO)
 logging.getLogger("songbird").setLevel(logging.INFO)
+logging.getLogger("discord_ext_songbird").setLevel(logging.INFO)
 
 
 def make_callback(ctx, query):

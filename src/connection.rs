@@ -237,9 +237,15 @@ impl VoiceUpdate for DiscordPyVoiceUpdate {
                     .into_bound(py),
             )
         })
-        .map_err(|_| JoinError::Dropped)?;
+        .map_err(|e| {
+            tracing::error!(error = ?e, "failed to call update voice state hook");
+            JoinError::Dropped
+        })?;
 
-        fut.await.map_err(|_| JoinError::Dropped)?;
+        fut.await.map_err(|e| {
+            tracing::error!(error = ?e, "exception in update voice state hook");
+            JoinError::Dropped
+        })?;
 
         Ok(())
     }
