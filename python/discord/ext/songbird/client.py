@@ -172,7 +172,7 @@ class SongbirdClient(discord.VoiceProtocol):
             self._songbird = MISSING
             self.cleanup()
 
-    async def set_bitrate(self, bitrate: Bitrate) -> None:
+    def set_bitrate(self, bitrate: Bitrate) -> None:
         """
         Sets the bitrate for the Opus encoder. The default value is 128kbps:
 
