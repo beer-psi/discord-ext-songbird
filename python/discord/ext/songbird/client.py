@@ -96,6 +96,12 @@ class SongbirdClient(discord.VoiceProtocol):
                 f"voice state hook unexpectedly called for guild ID {guild_id}"
             )
 
+        self.channel = (  # pyright: ignore[reportAttributeAccessIssue]
+            self.channel.guild.get_channel(channel_id)
+            if channel_id is not None
+            else None
+        )
+
         await self.channel.guild.change_voice_state(
             channel=discord.Object(id=channel_id) if channel_id is not None else None,
             self_deaf=self_deaf,
