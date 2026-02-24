@@ -174,15 +174,11 @@ impl SongbirdClient {
 
     /// Plays a track.
     ///
-    /// Since Track is immutable, this method also supports any class with a
-    /// :meth:`into_track` method that returns a Track, in order to customize
-    /// the track before playing.
-    ///
     /// The underlying audio source is consumed. If it is reused, a :class:`SourceConsumed`
     /// exception is raised.
-    pub fn play<'py>(&self, py: Python<'py>, track: Py<PyAny>) -> PyResult<Bound<'py, PyAny>> {
+    pub fn play<'py>(&self, py: Python<'py>, track: Py<Track>) -> PyResult<Bound<'py, PyAny>> {
         let conn = self.connection.clone();
-        let songbird_track = convert_track_to_songbird_track(py, track)?;
+        let songbird_track = track.bind(py).borrow().into_songbird_track(py)?;
 
         future_into_py(py, async move {
             let handle = conn.play(songbird_track).await?;
@@ -192,9 +188,9 @@ impl SongbirdClient {
     }
 
     /// Similar to :meth:`play`, except that it stops all other sources attached to this connection.
-    pub fn play_only<'py>(&self, py: Python<'py>, track: Py<PyAny>) -> PyResult<Bound<'py, PyAny>> {
+    pub fn play_only<'py>(&self, py: Python<'py>, track: Py<Track>) -> PyResult<Bound<'py, PyAny>> {
         let conn = self.connection.clone();
-        let songbird_track = convert_track_to_songbird_track(py, track)?;
+        let songbird_track = track.bind(py).borrow().into_songbird_track(py)?;
 
         future_into_py(py, async move {
             let handle = conn.play_only(songbird_track).await?;
@@ -250,20 +246,6 @@ impl SongbirdClient {
 
             Ok(())
         })
-    }
-}
-
-fn convert_track_to_songbird_track(
-    py: Python,
-    track: Py<PyAny>,
-) -> PyResult<songbird::tracks::Track> {
-    if let Ok(track) = track.cast_bound::<Track>(py) {
-        track.get().into_songbird_track()
-    } else {
-        let track = track.call_method0(py, intern!(py, "into_track"))?;
-        let track = track.cast_bound::<Track>(py)?;
-
-        track.get().into_songbird_track()
     }
 }
 

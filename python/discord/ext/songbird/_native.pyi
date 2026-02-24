@@ -2,10 +2,8 @@ import os
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
 from enum import IntEnum
-from typing import Any, Literal, Protocol, overload
+from typing import Any, Literal, overload
 from uuid import UUID
-
-from _typeshed import StrOrBytesPath
 
 class SongbirdError(Exception): ...
 class ConnectionInvalid(SongbirdError): ...
@@ -45,8 +43,8 @@ class SongbirdClient:
     async def unmute(self) -> None: ...
     async def deafen(self) -> None: ...
     async def undeafen(self) -> None: ...
-    async def play(self, track: Track | SupportsIntoTrack) -> TrackHandle: ...
-    async def play_only(self, track: Track | SupportsIntoTrack) -> TrackHandle: ...
+    async def play(self, track: Track) -> TrackHandle: ...
+    async def play_only(self, track: Track) -> TrackHandle: ...
     async def play_input(self, source: AudioSource) -> TrackHandle:
         """
         Starts playing the given audio source. The audio source is consumed
@@ -136,30 +134,6 @@ class RetryStrategy:
         """
         ...
 
-class Track:
-    def __new__(
-        cls,
-        source: AudioSource,
-        playing: PlayMode,
-        volume: float,
-        loop_state: LoopState,
-        uuid: UUID,
-        /,
-    ) -> Track: ...
-    @property
-    def source(self) -> AudioSource: ...
-    @property
-    def playing(self) -> PlayMode: ...
-    @property
-    def volume(self) -> float: ...
-    @property
-    def loop_state(self) -> LoopState: ...
-    @property
-    def uuid(self) -> UUID: ...
-
-class SupportsIntoTrack(Protocol):
-    def into_track(self) -> Track: ...
-
 class PlayMode(IntEnum):
     Play = 0
     Pause = 1
@@ -180,6 +154,25 @@ class LoopState:
         The default is `0`, stopping the track once its input ends.
         """
         ...
+
+class Track:
+    source: AudioSource
+    playing: PlayMode
+    volume: float
+    loop_state: LoopState
+    uuid: UUID
+
+    def __new__(
+        cls,
+        source: AudioSource,
+        playing: PlayMode = PlayMode.Play,
+        volume: float = 1.0,
+        loop_state: LoopState = LoopState.finite(0),
+        uuid: UUID | None = None,
+        /,
+    ) -> Track: ...
+    def play(self) -> Track: ...
+    def pause(self) -> Track: ...
 
 class TrackHandle:
     """Handle for control of a track."""
@@ -240,7 +233,7 @@ class AudioSource:
     pass
 
 class File(AudioSource):
-    def __new__(cls, path: StrOrBytesPath) -> File: ...
+    def __new__(cls, path: str | os.PathLike[str]) -> File: ...
 
 class HttpRequest(AudioSource):
     def __new__(cls, url: str) -> File: ...

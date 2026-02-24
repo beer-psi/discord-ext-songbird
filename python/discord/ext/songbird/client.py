@@ -15,11 +15,11 @@ from ._native import (
     Config,
     ConnectionInvalid,
     PlayError,
+    Track,
     TrackEvent,
     TrackHandle,
 )
 from ._native import SongbirdClient as NativeSongbirdClient
-from .track import Track
 
 if TYPE_CHECKING:
     from discord.guild import VocalGuildChannel

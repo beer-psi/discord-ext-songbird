@@ -15,6 +15,7 @@ from ._native import (
     RawAudioSource,
     RetryStrategy,
     SongbirdError,
+    Track,
     TrackEvent,
     TrackHandle,
     UnknownCryptoMode,
@@ -22,7 +23,6 @@ from ._native import (
     UnknownTrackEvent,
 )
 from .client import SongbirdClient
-from .track import Track
 
 __all__ = (
     "AudioSource",
