@@ -594,7 +594,7 @@ dependencies = [
 
 [[package]]
 name = "discord-ext-songbird"
-version = "0.2.0-alpha.5"
+version = "0.2.0-alpha.6"
 dependencies = [
  "async-trait",
  "pyo3",
@@ -3204,7 +3204,7 @@ dependencies = [
 [[package]]
 name = "songbird"
 version = "0.5.0"
-source = "git+https://github.com/beerpsi-forks/songbird.git?branch=davey#49ac5777b1045cd7d35bb2af1e4759aa02026c6f"
+source = "git+https://github.com/beerpsi-forks/songbird.git?branch=davey#570deb48104cd9fb40a7d98d8a819026226c013b"
 dependencies = [
  "aead",
  "aes-gcm",
