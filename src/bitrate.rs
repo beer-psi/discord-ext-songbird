@@ -29,7 +29,7 @@ impl Bitrate {
 impl From<Bitrate> for songbird::driver::Bitrate {
     fn from(value: Bitrate) -> Self {
         match value {
-            Bitrate::_BitsPerSecond(bitrate) => songbird::driver::Bitrate::BitsPerSecond(bitrate),
+            Bitrate::_BitsPerSecond(bitrate) => songbird::driver::Bitrate::Bits(bitrate),
             Bitrate::_Max() => songbird::driver::Bitrate::Max,
             Bitrate::_Auto() => songbird::driver::Bitrate::Auto,
         }

@@ -1,6 +1,6 @@
 [package]
 name = "discord-ext-songbird"
-version = "0.2.0-alpha.6"
+version = "0.2.0-alpha.7"
 authors = ["beerpsi <beerpsi@duck.com>"]
 edition = "2021"
 rust-version = "1.83"
@@ -30,7 +30,7 @@ uuid = "1.19.0"
 
 [dependencies.songbird]
 git = "https://github.com/beerpsi-forks/songbird.git"
-branch = "davey"
+branch = "opus2"
 default-features = false
 features = ["driver", "gateway", "rustls", "tungstenite"]
 

@@ -75,6 +75,5 @@ docs/_build/
 
 wheelhouse/
 
-Cargo.lock
 uv.lock
 *.opus
