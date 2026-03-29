@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 license-files = ["LICEN[CS]E*"]
 dependencies = [
     "discord-py~=2.0",
-    "typing-extensions~=4.0",
+    "typing-extensions~=4.5",
 ]
 classifiers = [
     "Programming Language :: Rust",

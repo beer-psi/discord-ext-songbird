@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     error::{SongbirdError, SongbirdResult},
-    events::track::{PythonTrackEventHandler, TrackEvent},
+    events::{track::TrackEvent, PythonEventHandler},
 };
 
 #[pyclass(module = "discord.ext.songbird._native.tracks", frozen)]
@@ -83,7 +83,7 @@ impl TrackHandle {
             self.inner
                 .add_event(
                     songbird_event.into(),
-                    PythonTrackEventHandler {
+                    PythonEventHandler {
                         callback,
                         task_locals,
                     },

@@ -13,6 +13,7 @@ from ._native import (
     AudioSource,
     Bitrate,
     Config,
+    ConnectionInfo,
     ConnectionInvalid,
     PlayError,
     Track,
@@ -174,7 +175,7 @@ class SongbirdClient(discord.VoiceProtocol):
         Sets the bitrate for the Opus encoder. The default value is 128kbps:
 
         ```python
-        Bitrate.bits_per_second(128_000)
+        Bitrate.bits(128_000)
         ```
 
         Alternatively, :meth:`Bitrate.auto` and :meth:`Bitrate.max` are available.
@@ -203,6 +204,17 @@ class SongbirdClient(discord.VoiceProtocol):
             channel.id if channel is not None else None, timeout
         )
 
+    def current_connection(self) -> Optional[ConnectionInfo]:
+        """Returns the current voice connection details for this client."""
+
+        if self._songbird is MISSING:
+            return None
+
+        try:
+            return self._songbird.current_connection()
+        except ConnectionInvalid:
+            return None
+
     def is_connected(self) -> bool:
         """Whether the client is connected to a voice channel."""
 
@@ -213,6 +225,32 @@ class SongbirdClient(discord.VoiceProtocol):
             return self._songbird.is_connected()
         except ConnectionInvalid:
             return False
+
+    async def mute(self) -> None:
+        """Sets the current connection to be muted."""
+        await self._songbird.mute()
+
+    async def unmute(self) -> None:
+        """Sets the current connection to be unmuted."""
+        await self._songbird.unmute()
+
+    @property
+    def is_mute(self) -> bool:
+        """Whether the current connection is self-muted."""
+        return self._songbird.is_mute()
+
+    async def deafen(self) -> None:
+        """Sets the current connection to be deafened."""
+        await self._songbird.deafen()
+
+    async def undeafen(self) -> None:
+        """Sets the current connection to be undeafened."""
+        await self._songbird.undeafen()
+
+    @property
+    def is_deaf(self) -> bool:
+        """Whether the current connection is self-deafened."""
+        return self._songbird.is_deaf()
 
     def play(
         self,

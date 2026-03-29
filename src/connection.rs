@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
-use pyo3::{Py, PyAny, Python};
+use pyo3::{pyclass, Py, PyAny, Python};
 use songbird::{
     driver::Bitrate,
     error::{JoinError, JoinResult},
@@ -81,6 +81,7 @@ impl VoiceConnection {
             };
 
             config.gateway_timeout = Some(timeout);
+            config.driver_timeout = Some(timeout);
 
             if !reconnect {
                 config.driver_retry.retry_limit = Some(0)
@@ -103,14 +104,14 @@ impl VoiceConnection {
     }
 
     pub async fn disconnect(&self) -> SongbirdResult<()> {
-        let mut guard = self.call.lock().await;
+        let mut call_lock = self.call.lock().await;
 
-        if let Some(call) = &mut *guard {
+        if let Some(call) = &mut *call_lock {
             call.remove_all_global_events();
             call.leave().await?;
         }
 
-        *guard = None;
+        *call_lock = None;
 
         Ok(())
     }
@@ -146,6 +147,24 @@ impl VoiceConnection {
         Ok(())
     }
 
+    pub fn current_connection(&self) -> SongbirdResult<Option<PyConnectionInfo>> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
+            return Err(SongbirdError::ConnectionInvalid);
+        };
+        let Some(connection_info) = call.current_connection() else {
+            return Ok(None);
+        };
+
+        Ok(Some(PyConnectionInfo {
+            channel_id: connection_info.channel_id.0.into(),
+            endpoint: connection_info.endpoint.clone(),
+            guild_id: connection_info.guild_id.0.into(),
+            session_id: connection_info.session_id.clone(),
+            token: connection_info.token.clone(),
+            user_id: connection_info.user_id.0.into(),
+        }))
+    }
+
     pub fn is_connected(&self) -> SongbirdResult<bool> {
         let Some(call) = &mut *self.call.blocking_lock() else {
             return Err(SongbirdError::ConnectionInvalid);
@@ -164,6 +183,14 @@ impl VoiceConnection {
         Ok(())
     }
 
+    pub fn is_mute(&self) -> SongbirdResult<bool> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
+            return Err(SongbirdError::ConnectionInvalid);
+        };
+
+        Ok(call.is_mute())
+    }
+
     pub async fn deafen(&self, deaf: bool) -> SongbirdResult<()> {
         let Some(call) = &mut *self.call.lock().await else {
             return Err(SongbirdError::ConnectionInvalid);
@@ -172,6 +199,14 @@ impl VoiceConnection {
         call.deafen(deaf).await?;
 
         Ok(())
+    }
+
+    pub fn is_deaf(&self) -> SongbirdResult<bool> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
+            return Err(SongbirdError::ConnectionInvalid);
+        };
+
+        Ok(call.is_deaf())
     }
 
     pub fn play(&self, track: Track) -> SongbirdResult<TrackHandle> {
@@ -213,6 +248,47 @@ impl VoiceConnection {
 
         Ok(call.set_bitrate(bitrate))
     }
+
+    pub fn stop(&self) -> SongbirdResult<()> {
+        let Some(call) = &mut *self.call.blocking_lock() else {
+            return Err(SongbirdError::ConnectionInvalid);
+        };
+
+        Ok(call.stop())
+    }
+}
+
+#[pyclass(
+    frozen,
+    module = "discord.ext.songbird._native",
+    name = "ConnectionInfo"
+)]
+pub struct PyConnectionInfo {
+    /// ID of the voice channel being joined, if it is known.
+    #[pyo3(get)]
+    channel_id: u64,
+
+    /// URL of the voice websocket gateway server assigned to this call.
+    #[pyo3(get)]
+    endpoint: String,
+
+    /// ID of the target voice channel's parent guild.
+    ///
+    /// Bots cannot connect to a guildless (i.e., direct message) voice call.
+    #[pyo3(get)]
+    guild_id: u64,
+
+    /// Unique string describing this session for validation/authentication purposes.
+    #[pyo3(get)]
+    session_id: String,
+
+    /// Ephemeral secret used to validate the above session.
+    #[pyo3(get)]
+    token: String,
+
+    /// UserID of this bot.
+    #[pyo3(get)]
+    user_id: u64,
 }
 
 #[derive(Debug)]

@@ -7,7 +7,7 @@ use songbird::id::ChannelId;
 use crate::{
     bitrate::Bitrate,
     config::Config,
-    connection::{DiscordPyVoiceUpdate, VoiceConnection},
+    connection::{DiscordPyVoiceUpdate, PyConnectionInfo, VoiceConnection},
     input::sources::base::{AudioSource, SongbirdSource},
     tracks::{handle::TrackHandle, Track},
 };
@@ -55,17 +55,17 @@ impl SongbirdClient {
 
     /// Updates the voice server data.
     pub fn update_server(&self, endpoint: String, token: String) -> PyResult<()> {
-        let conn = self.connection.clone();
-
-        conn.update_server(endpoint, token).map_err(|e| e.into())
+        self.connection
+            .update_server(endpoint, token)
+            .map_err(|e| e.into())
     }
 
     /// Updates the internal voice state of the current user.
     pub fn update_state(&self, session_id: String, channel_id: Option<NonZeroU64>) -> PyResult<()> {
-        let conn = self.connection.clone();
         let channel_id: Option<ChannelId> = channel_id.map(|c| c.into());
 
-        conn.update_state(session_id, channel_id)
+        self.connection
+            .update_state(session_id, channel_id)
             .map_err(|e| e.into())
     }
 
@@ -113,11 +113,13 @@ impl SongbirdClient {
         })
     }
 
+    pub fn current_connection(&self) -> PyResult<Option<PyConnectionInfo>> {
+        self.connection.current_connection().map_err(|e| e.into())
+    }
+
     /// Indicates if the client is connected to a voice channel.
     pub fn is_connected(&self) -> PyResult<bool> {
-        let conn = self.connection.clone();
-
-        conn.is_connected().map_err(|e| e.into())
+        self.connection.is_connected().map_err(|e| e.into())
     }
 
     pub fn mute<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -138,6 +140,10 @@ impl SongbirdClient {
         })
     }
 
+    pub fn is_mute(&self) -> PyResult<bool> {
+        self.connection.is_mute().map_err(|e| e.into())
+    }
+
     pub fn deafen<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let conn = self.connection.clone();
 
@@ -156,23 +162,25 @@ impl SongbirdClient {
         })
     }
 
+    pub fn is_deaf(&self) -> PyResult<bool> {
+        self.connection.is_deaf().map_err(|e| e.into())
+    }
+
     /// Plays a track.
     ///
     /// The underlying audio source is consumed. If it is reused, a :class:`SourceConsumed`
     /// exception is raised.
     pub fn play(&self, track: Py<Track>) -> PyResult<TrackHandle> {
-        let conn = self.connection.clone();
         let songbird_track = Python::attach(|py| track.bind(py).borrow().into_songbird_track(py))?;
-        let handle = conn.play(songbird_track)?;
+        let handle = self.connection.play(songbird_track)?;
 
         Ok(TrackHandle::new(handle))
     }
 
     /// Similar to :meth:`play`, except that it stops all other sources attached to this connection.
     pub fn play_only(&self, track: Py<Track>) -> PyResult<TrackHandle> {
-        let conn = self.connection.clone();
         let songbird_track = Python::attach(|py| track.bind(py).borrow().into_songbird_track(py))?;
-        let handle = conn.play_only(songbird_track)?;
+        let handle = self.connection.play_only(songbird_track)?;
 
         Ok(TrackHandle::new(handle))
     }
@@ -183,8 +191,7 @@ impl SongbirdClient {
     /// exception is raised.
     pub fn play_input(&self, source: Py<AudioSource>) -> PyResult<TrackHandle> {
         let input = Python::attach(|py| convert_audio_source_to_songbird_input(py, source))?;
-        let conn = self.connection.clone();
-        let handle = conn.play_input(input)?;
+        let handle = self.connection.play_input(input)?;
 
         Ok(TrackHandle::new(handle))
     }
@@ -192,16 +199,19 @@ impl SongbirdClient {
     /// Similar to :meth:`play_input`, except that it stops all other sources attached to this connection.
     pub fn play_only_input(&self, source: Py<AudioSource>) -> PyResult<TrackHandle> {
         let input = Python::attach(|py| convert_audio_source_to_songbird_input(py, source))?;
-        let conn = self.connection.clone();
-        let handle = conn.play_only_input(input)?;
+        let handle = self.connection.play_only_input(input)?;
 
         Ok(TrackHandle::new(handle))
     }
 
-    pub fn set_bitrate<'py>(&self, bitrate: Bitrate) -> PyResult<()> {
-        let conn = self.connection.clone();
+    pub fn set_bitrate(&self, bitrate: Bitrate) -> PyResult<()> {
+        self.connection
+            .set_bitrate(bitrate.into())
+            .map_err(|e| e.into())
+    }
 
-        conn.set_bitrate(bitrate.into()).map_err(|e| e.into())
+    pub fn stop(&self) -> PyResult<()> {
+        self.connection.stop().map_err(|e| e.into())
     }
 }
 

@@ -24,6 +24,8 @@ fn discord_ext_songbird(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_class::<client::SongbirdClient>()?;
 
+    m.add_class::<connection::PyConnectionInfo>()?;
+
     m.add_class::<bitrate::Bitrate>()?;
 
     m.add_class::<config::Config>()?;
