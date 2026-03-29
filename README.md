@@ -32,7 +32,7 @@ logging.getLibrary("songbird").setLevel(logging.INFO)
 ## Building
 
 A working Rust compiler with `rustc` and `cargo` is required to build this package.
-The minimum supported Rust version is Rust 1.83.
+The minimum supported Rust version is Rust 1.88.
 
 ## Development
 

@@ -10,6 +10,7 @@ on:
     branches:
       - trunk
     paths-ignore:
+      - ".github/workflows/msrv.yml"
       - ".github/workflows/create-wheelhouse.yml"
   pull_request:
   workflow_dispatch:
