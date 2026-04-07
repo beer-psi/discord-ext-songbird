@@ -1,6 +1,10 @@
 use std::time::Duration;
 
-use pyo3::{exceptions::PyTypeError, prelude::*};
+use nonmax::NonMaxU32;
+use pyo3::{
+    exceptions::{PyTypeError, PyValueError},
+    prelude::*,
+};
 use pyo3_async_runtimes::tokio::future_into_py;
 use songbird::{
     events::TrackEvent as SongbirdTrackEvent, tracks::TrackHandle as SongbirdTrackHandle,
@@ -107,8 +111,14 @@ impl TrackHandle {
         Ok(())
     }
 
-    pub fn loop_for(&self, count: usize) -> SongbirdResult<()> {
-        self.inner.loop_for(count)?;
+    pub fn loop_for(&self, count: u32) -> PyResult<()> {
+        let Some(count) = NonMaxU32::new(count) else {
+            return Err(PyValueError::new_err("invalid u32::MAX value"));
+        };
+
+        self.inner
+            .loop_for(count)
+            .map_err(|e| SongbirdError::ControlError(e))?;
         Ok(())
     }
 

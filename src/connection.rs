@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{num::NonZeroU8, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use pyo3::{pyclass, Py, PyAny, Python};
@@ -80,11 +80,13 @@ impl VoiceConnection {
                 return Err(SongbirdError::ConnectionInvalid);
             };
 
-            config.gateway_timeout = Some(timeout);
-            config.driver_timeout = Some(timeout);
+            config.gateway_timeout = Some(timeout.into());
+            config.driver_timeout = Some(timeout.into());
 
             if !reconnect {
-                config.driver_retry.retry_limit = Some(0)
+                config.driver_retry.retry_limit = Some(
+                    NonZeroU8::new(1).expect("can initialize NonZeroU8 from nonzero constant"),
+                );
             }
 
             call.set_config(config);

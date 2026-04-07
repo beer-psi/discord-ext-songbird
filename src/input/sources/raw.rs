@@ -3,7 +3,7 @@ use std::io::{Read, Seek};
 use async_trait::async_trait;
 use pyo3::{exceptions::PyNotImplementedError, intern, prelude::*};
 use songbird::input::{AudioStream, AudioStreamError, Compose, Input};
-use symphonia::core::{io::MediaSource, probe::Hint};
+use symphonia::core::io::MediaSource;
 
 use crate::{
     error::SongbirdResult,
@@ -95,24 +95,10 @@ impl IntoSongbirdInput for RawAudioSourceInner {
 #[async_trait]
 impl Compose for RawAudioSourceInner {
     fn create(&mut self) -> Result<AudioStream<Box<dyn MediaSource>>, AudioStreamError> {
-        let mime_type = Python::attach(|py| {
-            let mime_type = self.0.call_method0(py, intern!(py, "mime_type"))?;
-            let mime_type = mime_type.extract::<Option<String>>(py)?;
-
-            PyResult::<Option<String>>::Ok(mime_type)
-        })
-        .map_err(|e| AudioStreamError::Fail(Box::new(e)))?;
-
         Ok(AudioStream {
             input: Box::new(RawAudioSourceReader::new(Python::attach(|py| {
                 self.0.clone_ref(py)
             }))),
-            hint: mime_type.map(|m| {
-                let mut hint = Hint::new();
-
-                hint.mime_type(&m);
-                hint
-            }),
         })
     }
 

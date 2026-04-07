@@ -86,14 +86,76 @@ class Config:
     Defaults to :attr:`CryptoMode.Aes256Gcm`.
     """
 
-    gateway_timeout: timedelta | None
+    gateway_timeout: float | None
+    """
+    Number of seconds to wait for Discord to reply with connection information.
+
+    This is a useful fallback in the event that:
+     * the underlying Discord client restarts and loses a join request, or
+     * a channel join fails because the bot is already believed to be there.
+
+    Defaults to 10 seconds. If set to `None`, connections will never time out.
+    """
 
     mix_mode: MixMode
+    """
+    Configures whether the driver will mix and output stereo or mono Opus data
+    over a voice channel.
+    """
+
     preallocated_tracks: int
+    """
+    Number of concurrently active tracks to allocate memory for.
+
+    This should be set at, or just above, the maximum number of tracks
+    you expect your bot will play at the same time. Exceeding the size of
+    the internal queue will trigger a larger memory allocation and copy,
+    possibly causing the mixer thread to miss a packet deadline.
+
+    Defaults to `1`. The maximum value is `255`.
+
+    Changes to this field in a running driver will only ever increase
+    the capacity of the track store.
+    """
+
     driver_retry_strategy: RetryStrategy
-    driver_retry_limit: int | None
+    """
+    Strategy used to determine how long to wait between retry attempts.
+
+    *Defaults to a :meth:`RetryStrategy.backoff` from 0.25s
+    to 10s, with a jitter of `0.1`.*
+    """
+
+    driver_retry_limit: int
+    """
+    The maximum number of retries to attempt.
+
+    `0` will attempt an infinite number of retries.
+    """
+
     use_softclip: bool
-    driver_timeout: timedelta | None
+    """
+    Configures whether or not each mixed audio packet is [soft-clipped] into the
+    [-1, 1] audio range.
+
+    Defaults to `True`, preventing clipping and dangerously loud audio from being sent.
+    **This operation adds ~3% cost to a standard (non-passthrough) mix cycle.**
+
+    If you *know* that your bot will only play one sound at a time and that
+    your volume is between `0.0` and `1.0`, then you can disable soft-clipping
+    for a performance boost. If you are playing several sounds at once, do not
+    disable this unless you make sure to reduce the volume of each sound.
+
+    [soft-clipped]: https://opus-codec.org/docs/opus_api-1.3.1/group__opus__decoder.html#gaff99598b352e8939dded08d96e125e0b
+    """
+
+    driver_timeout: float | None
+    """
+    Configures the maximum number of seconds to wait for an attempted voice
+    connection to Discord.
+
+    Defaults to 10 seconds. If set to `None`, connections will never time out.
+    """
 
     def __new__(cls) -> Config: ...
 
@@ -174,6 +236,8 @@ class LoopState:
         Track will loop `n` more times.
 
         The default is `0`, stopping the track once its input ends.
+
+        Raises if :param:`count` is negative or at least `2 ** 32 - 1`.
         """
         ...
 
@@ -238,7 +302,13 @@ class TrackHandle:
         ...
     def enable_loop(self) -> None: ...
     def disable_loop(self) -> None: ...
-    def loop_for(self, count: int) -> None: ...
+    def loop_for(self, count: int) -> None:
+        """
+        Set an audio track to loop a set number of times.
+
+        Raises if `count` is negative or at least `2 ** 32 - 1`.
+        """
+        ...
     @property
     def uuid(self) -> UUID: ...
 

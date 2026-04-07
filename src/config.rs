@@ -1,10 +1,11 @@
 use std::{
+    num::NonZeroU8,
     sync::{Arc, RwLock},
     time::Duration,
 };
 
 use pyo3::prelude::*;
-use songbird::driver::DisposalThread;
+use songbird::{driver::DisposalThread, FloatDuration};
 
 use crate::constants::DISPOSAL_THREAD;
 use crate::error::SongbirdError;
@@ -57,13 +58,18 @@ impl Config {
     }
 
     #[getter]
-    fn gateway_timeout(&self) -> Option<Duration> {
-        self.inner.read().unwrap().gateway_timeout
+    fn gateway_timeout(&self) -> Option<f32> {
+        self.inner
+            .read()
+            .unwrap()
+            .gateway_timeout
+            .map(|v| v.as_secs_f32())
     }
 
     #[setter]
-    fn set_gateway_timeout(&mut self, value: Option<Duration>) {
-        self.inner.write().unwrap().gateway_timeout = value;
+    fn set_gateway_timeout(&mut self, value: Option<f32>) {
+        self.inner.write().unwrap().gateway_timeout =
+            value.map(|v| FloatDuration::from_secs_f32(v));
     }
 
     #[getter]
@@ -77,12 +83,12 @@ impl Config {
     }
 
     #[getter]
-    fn preallocated_tracks(&self) -> usize {
+    fn preallocated_tracks(&self) -> u8 {
         self.inner.read().unwrap().preallocated_tracks
     }
 
     #[setter]
-    fn set_preallocated_tracks(&mut self, value: usize) {
+    fn set_preallocated_tracks(&mut self, value: u8) {
         self.inner.write().unwrap().preallocated_tracks = value;
     }
 
@@ -103,12 +109,18 @@ impl Config {
     }
 
     #[getter]
-    fn driver_retry_limit(&self) -> Option<usize> {
-        self.inner.read().unwrap().driver_retry.retry_limit
+    fn driver_retry_limit(&self) -> u8 {
+        self.inner
+            .read()
+            .unwrap()
+            .driver_retry
+            .retry_limit
+            .map(|v| v.get())
+            .unwrap_or(0)
     }
 
     #[setter]
-    fn set_driver_retry_limit(&mut self, value: Option<usize>) {
+    fn set_driver_retry_limit(&mut self, value: Option<NonZeroU8>) {
         self.inner.write().unwrap().driver_retry.retry_limit = value;
     }
 
@@ -123,13 +135,17 @@ impl Config {
     }
 
     #[getter]
-    fn driver_timeout(&self) -> Option<Duration> {
-        self.inner.read().unwrap().driver_timeout
+    fn driver_timeout(&self) -> Option<f32> {
+        self.inner
+            .read()
+            .unwrap()
+            .driver_timeout
+            .map(|v| v.as_secs_f32())
     }
 
     #[setter]
-    fn set_driver_timeout(&mut self, value: Option<Duration>) {
-        self.inner.write().unwrap().driver_timeout = value;
+    fn set_driver_timeout(&mut self, value: Option<f32>) {
+        self.inner.write().unwrap().driver_timeout = value.map(|v| FloatDuration::from_secs_f32(v));
     }
 }
 
@@ -222,10 +238,16 @@ impl RetryStrategy {
 impl From<RetryStrategy> for songbird::driver::retry::Strategy {
     fn from(value: RetryStrategy) -> Self {
         match value {
-            RetryStrategy::_Every(duration) => songbird::driver::retry::Strategy::Every(duration),
+            RetryStrategy::_Every(duration) => {
+                songbird::driver::retry::Strategy::Every(duration.into())
+            }
             RetryStrategy::_Backoff { min, max, jitter } => {
                 songbird::driver::retry::Strategy::Backoff(
-                    songbird::driver::retry::ExponentialBackoff { min, max, jitter },
+                    songbird::driver::retry::ExponentialBackoff {
+                        min: min.into(),
+                        max: max.into(),
+                        jitter,
+                    },
                 )
             }
         }
@@ -238,12 +260,12 @@ impl TryFrom<songbird::driver::retry::Strategy> for RetryStrategy {
     fn try_from(value: songbird::driver::retry::Strategy) -> Result<Self, Self::Error> {
         match value {
             songbird::driver::retry::Strategy::Every(duration) => {
-                Ok(RetryStrategy::_Every(duration))
+                Ok(RetryStrategy::_Every(duration.into()))
             }
             songbird::driver::retry::Strategy::Backoff(exponential_backoff) => {
                 Ok(RetryStrategy::_Backoff {
-                    min: exponential_backoff.min,
-                    max: exponential_backoff.max,
+                    min: exponential_backoff.min.into(),
+                    max: exponential_backoff.max.into(),
                     jitter: exponential_backoff.jitter,
                 })
             }
