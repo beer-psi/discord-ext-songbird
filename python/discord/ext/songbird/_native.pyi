@@ -86,9 +86,9 @@ class Config:
     Defaults to :attr:`CryptoMode.Aes256Gcm`.
     """
 
-    gateway_timeout: float | None
+    gateway_timeout: timedelta | None
     """
-    Number of seconds to wait for Discord to reply with connection information.
+    Amount of time to wait for Discord to reply with connection information.
 
     This is a useful fallback in the event that:
      * the underlying Discord client restarts and loses a join request, or
@@ -149,9 +149,9 @@ class Config:
     [soft-clipped]: https://opus-codec.org/docs/opus_api-1.3.1/group__opus__decoder.html#gaff99598b352e8939dded08d96e125e0b
     """
 
-    driver_timeout: float | None
+    driver_timeout: timedelta | None
     """
-    Configures the maximum number of seconds to wait for an attempted voice
+    Configures the maximum amount of time to wait for an attempted voice
     connection to Discord.
 
     Defaults to 10 seconds. If set to `None`, connections will never time out.

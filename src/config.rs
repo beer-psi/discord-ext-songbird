@@ -5,7 +5,7 @@ use std::{
 };
 
 use pyo3::prelude::*;
-use songbird::{driver::DisposalThread, FloatDuration};
+use songbird::driver::DisposalThread;
 
 use crate::constants::DISPOSAL_THREAD;
 use crate::error::SongbirdError;
@@ -58,18 +58,13 @@ impl Config {
     }
 
     #[getter]
-    fn gateway_timeout(&self) -> Option<f32> {
-        self.inner
-            .read()
-            .unwrap()
-            .gateway_timeout
-            .map(|v| v.as_secs_f32())
+    fn gateway_timeout(&self) -> Option<Duration> {
+        self.inner.read().unwrap().gateway_timeout.map(|v| v.into())
     }
 
     #[setter]
-    fn set_gateway_timeout(&mut self, value: Option<f32>) {
-        self.inner.write().unwrap().gateway_timeout =
-            value.map(|v| FloatDuration::from_secs_f32(v));
+    fn set_gateway_timeout(&mut self, value: Option<Duration>) {
+        self.inner.write().unwrap().gateway_timeout = value.map(|v| v.into());
     }
 
     #[getter]
@@ -135,17 +130,13 @@ impl Config {
     }
 
     #[getter]
-    fn driver_timeout(&self) -> Option<f32> {
-        self.inner
-            .read()
-            .unwrap()
-            .driver_timeout
-            .map(|v| v.as_secs_f32())
+    fn driver_timeout(&self) -> Option<Duration> {
+        self.inner.read().unwrap().driver_timeout.map(|v| v.into())
     }
 
     #[setter]
-    fn set_driver_timeout(&mut self, value: Option<f32>) {
-        self.inner.write().unwrap().driver_timeout = value.map(|v| FloatDuration::from_secs_f32(v));
+    fn set_driver_timeout(&mut self, value: Option<Duration>) {
+        self.inner.write().unwrap().driver_timeout = value.map(|v| v.into());
     }
 }
 
