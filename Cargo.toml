@@ -1,6 +1,6 @@
 [package]
 name = "discord-ext-songbird"
-version = "0.2.0-alpha.8"
+version = "0.2.0"
 authors = ["beerpsi <beerpsi@duck.com>"]
 edition = "2021"
 rust-version = "1.88"
